@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import type { DetailView, ItemView, OrderView } from "@/application/queries/orderViews";
+import { OrderStatus } from "@/domain/types";
 import { errorText, patchJson, postJson } from "../../api";
 import { DetailRow } from "./DetailRow";
+import { OrderActions } from "./OrderActions";
 import { OrderTimeline } from "./OrderTimeline";
 import { PaymentSection } from "./PaymentSection";
 import { StatusBadge } from "./StatusBadge";
@@ -33,6 +35,7 @@ export function OrderSheet({ order, onClose, onChanged }: Props) {
         <AddItemButton order={order} onChanged={onChanged} />
         <DetailRow detail={order.deliveryFee} editable={order.editable} onSave={save(order.deliveryFee)} />
         <TotalAndRequest order={order} onChanged={onChanged} />
+        <OrderActions order={order} onChanged={onChanged} />
         {order.payment && <PaymentSection order={order} payment={order.payment} />}
         <OrderTimeline order={order} />
       </div>
@@ -91,7 +94,9 @@ function TotalAndRequest({ order, onChanged }: Pick<Props, "order" | "onChanged"
     <section className="flex flex-col gap-2 border-t border-line px-3 py-3">
       <p className="flex justify-between text-lg font-semibold">
         <span>Total</span>
-        <span>{order.total}</span>
+        <span className={order.status === OrderStatus.Cancelled ? "text-muted line-through" : ""}>
+          {order.total}
+        </span>
       </p>
       {order.editable && <RequestPaymentButton order={order} onChanged={onChanged} />}
     </section>

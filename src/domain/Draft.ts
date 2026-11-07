@@ -50,12 +50,22 @@ export class Draft {
     return new Draft({ id, conversationId, kind, text, options: [], orderId: order.id, payToken: null });
   }
 
+  static refund(id: string, conversationId: string, order: OrderRef & { refunded: Money }): Draft {
+    const text = `We've refunded ${order.refunded.format()} to your PayPal account for order #${order.number}. It can take a few days to show.`;
+    const kind = DraftKind.Refund;
+    return new Draft({ id, conversationId, kind, text, options: [], orderId: order.id, payToken: null });
+  }
+
   static restore(snapshot: DraftSnapshot): Draft {
     return new Draft({ ...snapshot, options: [...snapshot.options] });
   }
 
   get id(): string {
     return this.data.id;
+  }
+
+  get orderId(): string | null {
+    return this.data.orderId;
   }
 
   get kind(): DraftKind {

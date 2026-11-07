@@ -22,6 +22,7 @@ export function PaymentSection({ order, payment }: { order: OrderView; payment: 
       />
       <Field label="PayPal order" value={payment.paypalOrderId} mono />
       <Field label="Transaction ID" value={payment.captureId} mono />
+      <Field label="Refund ID" value={payment.refundId} mono />
     </section>
   );
 }

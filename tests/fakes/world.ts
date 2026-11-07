@@ -1,5 +1,7 @@
+import { CancelOrder } from "@/application/CancelOrder";
 import { CapturePayment } from "@/application/CapturePayment";
 import { PreparePayPalOrder } from "@/application/PreparePayPalOrder";
+import { RefundPayment } from "@/application/RefundPayment";
 import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
 import { GetInbox } from "@/application/queries/GetInbox";
 import { GetPayPage } from "@/application/queries/GetPayPage";
@@ -53,6 +55,8 @@ export function appWorld() {
     requestPayment: new RequestPayment(a),
     preparePayPal: new PreparePayPalOrder(a),
     capture: new CapturePayment(a),
+    refund: new RefundPayment(a),
+    cancel: new CancelOrder(a),
     inbox: new GetInbox(a),
     sellerView: new GetSellerConversation(a),
     customerView: new GetCustomerConversation(a),

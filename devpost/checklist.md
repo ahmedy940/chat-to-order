@@ -32,7 +32,7 @@ If time runs short, cut in this order (`spec.md > Decisions and Open Issues`): t
   Learner check: Open http://localhost:3000. Type an order as the customer, answer as the seller, then press New customer and send one more message. Refresh the page and check both conversations are still there.
   Commit: `Add the two-phone demo page with saved chat`
 
-- [ ] **3. The customer pays the order with PayPal, and it turns Paid**
+- [x] **3. The customer pays the order with PayPal, and it turns Paid**
   Becomes usable: In a conversation, the seller fills in the order card by hand with product, size, quantity, unit price and delivery fee. This is the same "type the details" path the seller uses whenever the AI can't read a chat. The total updates as they type. With nothing missing, Request payment freezes the order, creates its pay link and drafts "Here's your order #1001, total $128. Pay securely here: [link]". After Send, the order bar shows Awaiting payment, and the customer phone shows a link card. The link opens the pay page in a new tab: shop name, order number, items, delivery, total and PayPal's buttons. Paying as the sandbox buyer shows "Paid. Thank you!". Within about 2 seconds, the seller's order shows Paid with the buyer's name, email, shipping address and PayPal transaction ID, plus a drafted thank-you. Opening the link again says "This order is already paid." The order's timeline lists each step, with +$128.00 paid and a balance of $128.00.
   Why now: This is the half of the kernel the PayPal judges score most, and the riskiest integration, so it comes straight after the front door. Filling the card by hand means payment never waits on the AI.
   PRD ref: `prd.md > The Core Journey` (steps 7–9), `prd.md > Features and Behavior` (Settling What's Sold, Request Payment, Pay Page, Paid, Order Timeline), `prd.md > Screens and Layout` (Seller phone, Pay page), `prd.md > States and Boundaries` (PayPal unreachable, payment made while the seller's screen was closed)
@@ -94,7 +94,7 @@ If time runs short, cut in this order (`spec.md > Decisions and Open Issues`): t
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 3 (the first real PayPal payment turns the order Paid), while the pay page and the order card can still be reshaped
+- [x] Early usable behavior explored — after slice 3 (the first real PayPal payment turns the order Paid), while the pay page and the order card can still be reshaped. Done 7 Nov: the learner filled a card by hand (1 blue hat, $10 + $2.50 delivery), sent the pay link and paid as the US sandbox buyer; the order turned Paid with John Doe's San Jose address. Feedback: nothing to change.
 - [ ] Whole journey on your laptop — after slice 6, before polish and hosting: Read order → agent → pay → refund in one run
 - [ ] Final kick-the-tires exploration and feedback completed
 

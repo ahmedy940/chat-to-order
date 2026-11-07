@@ -250,10 +250,15 @@ export class Order {
     return newEvent(EventType.RefundFailed, Actor.PayPal, `Refund failed: ${reason}`);
   }
 
+  /** Before payment only: once money has moved, the way back is a refund. */
+  canCancel(): boolean {
+    return CANCELLABLE.includes(this.state.status);
+  }
+
   /** Cancels before payment. Cancelling twice changes nothing. */
   cancel(actor: Actor = Actor.Seller): NewOrderEvent | null {
     if (this.state.status === OrderStatus.Cancelled) return null;
-    if (!CANCELLABLE.includes(this.state.status)) throw new InvalidTransition(this.state.status, "cancel");
+    if (!this.canCancel()) throw new InvalidTransition(this.state.status, "cancel");
     this.state.status = OrderStatus.Cancelled;
     return newEvent(EventType.OrderCancelled, actor, "Order cancelled");
   }

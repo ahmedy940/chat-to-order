@@ -1,5 +1,7 @@
+import { CancelOrder } from "@/application/CancelOrder";
 import { CapturePayment } from "@/application/CapturePayment";
 import { PreparePayPalOrder } from "@/application/PreparePayPalOrder";
+import { RefundPayment } from "@/application/RefundPayment";
 import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
 import { GetInbox } from "@/application/queries/GetInbox";
 import { GetPayPage } from "@/application/queries/GetPayPage";
@@ -63,6 +65,8 @@ function build(db: Db) {
     requestPayment: new RequestPayment(a),
     preparePayPalOrder: new PreparePayPalOrder(a),
     capturePayment: new CapturePayment(a),
+    refundPayment: new RefundPayment(a),
+    cancelOrder: new CancelOrder(a),
     getInbox: new GetInbox(a),
     getSellerConversation: new GetSellerConversation(a),
     getCustomerConversation: new GetCustomerConversation(a),

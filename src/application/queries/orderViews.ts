@@ -10,11 +10,11 @@ import {
   FIELD_LABELS,
   ITEM_FIELD_ORDER,
   ORDER_STATUS_LABELS,
+  OrderStatus,
   SELLER_ONLY_FIELDS,
   type DetailField,
   type DetailStatus,
   type DraftKind,
-  type OrderStatus,
 } from "@/domain/types";
 import type { PayUrl } from "../ports/TokenFactory";
 
@@ -71,6 +71,10 @@ export interface OrderView {
   deliveryFee: DetailView;
   total: string;
   paymentBlocker: string | null;
+  /** Paid: the card offers Refund. */
+  canRefund: boolean;
+  /** Not paid yet: the card offers Cancel order. */
+  canCancel: boolean;
   amountMismatch: boolean;
   payment: PaymentView | null;
   timeline: TimelineLine[];
@@ -95,6 +99,8 @@ export function toOrderView(order: Order, events: OrderEvent[], payUrl: PayUrl):
     deliveryFee: toDetailView(order.deliveryFee(), null),
     total: order.total().format(),
     paymentBlocker: order.paymentBlocker(),
+    canRefund: order.status === OrderStatus.Paid,
+    canCancel: order.canCancel(),
     amountMismatch: order.amountMismatch,
     payment: toPaymentView(order, payUrl),
     timeline: events.map(toTimelineLine),

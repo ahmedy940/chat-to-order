@@ -152,7 +152,27 @@ export class FakePaymentGateway implements PaymentGateway {
     return Promise.resolve(result);
   }
 
-  refund(captureId: string): Promise<RefundResult> {
-    return Promise.resolve({ refundId: `REFUND-${captureId}`, status: "COMPLETED", amountCents: 0 });
+  /** Set to make PayPal refuse refunds, as it does past the refund window. */
+  refuseRefunds = false;
+  refundCalls = 0;
+  private readonly refunds = new Map<string, RefundResult>();
+
+  /** A full refund of the captured amount. A repeated request ID returns the first refund, not a second one. */
+  refund(captureId: string, requestId: string): Promise<RefundResult> {
+    this.refundCalls += 1;
+    if (this.refuseRefunds) {
+      const reason = "This capture is past its refund window.";
+      return Promise.reject(new PaymentGatewayError("REFUND_TIME_LIMIT_EXCEEDED", reason, false));
+    }
+    const earlier = this.refunds.get(requestId);
+    if (earlier) return Promise.resolve(earlier);
+    const captured = [...this.captures.values()].find((c) => c.captureId === captureId);
+    const refund = {
+      refundId: `REFUND-${captureId}`,
+      status: "COMPLETED",
+      amountCents: captured?.amountCents ?? 0,
+    };
+    this.refunds.set(requestId, refund);
+    return Promise.resolve(refund);
   }
 }
