@@ -9,6 +9,7 @@ import { Composer } from "./Composer";
 import { MessageList } from "./MessageList";
 import { OrderBar } from "./order/OrderBar";
 import { OrderSheet } from "./order/OrderSheet";
+import { ProposalCard } from "./ProposalCard";
 
 interface Props {
   conversationId: string;
@@ -54,7 +55,6 @@ function sender(conversationId: string, refresh: () => void) {
 
 function ConversationBody({ data, error, refresh }: BodyProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const send = sender(data.conversationId, refresh);
   const started = () => {
     refresh();
     setSheetOpen(true);
@@ -70,15 +70,25 @@ function ConversationBody({ data, error, refresh }: BodyProps) {
       />
       <MessageList messages={data.messages} mine={MessageDirection.Out} empty="" />
       {error && <p className="bg-missing-row px-3 py-1 text-[13px] text-missing-fg">{error}</p>}
-      <Composer
-        key={data.draft?.id ?? "typed"}
-        placeholder="Reply to the customer"
-        onSend={send}
-        draft={data.draft}
-      />
+      <ReplyArea data={data} refresh={refresh} />
       {sheetOpen && data.order && (
         <OrderSheet order={data.order} onClose={() => setSheetOpen(false)} onChanged={refresh} />
       )}
+    </>
+  );
+}
+
+/** The agent's suggestion (if any), then the reply box with the draft (if any). */
+function ReplyArea({ data, refresh }: Pick<BodyProps, "data" | "refresh">) {
+  return (
+    <>
+      {data.proposal && <ProposalCard key={data.proposal.id} proposal={data.proposal} onDone={refresh} />}
+      <Composer
+        key={data.draft?.id ?? "typed"}
+        placeholder="Reply to the customer"
+        onSend={sender(data.conversationId, refresh)}
+        draft={data.draft}
+      />
     </>
   );
 }

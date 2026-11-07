@@ -8,8 +8,10 @@ import type { DraftRepository } from "../ports/DraftRepository";
 import type { MessageRepository } from "../ports/MessageRepository";
 import type { OrderEventRepository } from "../ports/OrderEventRepository";
 import type { OrderRepository } from "../ports/OrderRepository";
+import type { ProposalRepository } from "../ports/ProposalRepository";
 import type { PayUrl } from "../ports/TokenFactory";
 import { toDraftView, toOrderView } from "./orderViews";
+import { toProposalView } from "./proposalView";
 import {
   toMessageViews,
   type CustomerConversationView,
@@ -23,6 +25,7 @@ interface Deps {
   orders: OrderRepository;
   events: OrderEventRepository;
   drafts: DraftRepository;
+  proposals: ProposalRepository;
   payUrl: PayUrl;
 }
 
@@ -54,6 +57,7 @@ export class GetSellerConversation extends ConversationQuery {
       order: order ? toOrderView(order, events, this.deps.payUrl) : null,
       draft: toDraftView(this.deps.drafts.get(id)),
       readAction: readAction(order, events, messages),
+      proposal: toProposalView(this.deps.proposals.openFor(id), order),
     };
   }
 }

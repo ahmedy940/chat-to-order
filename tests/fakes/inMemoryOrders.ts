@@ -153,6 +153,8 @@ export class FakePaymentGateway implements PaymentGateway {
       ...this.captureOverride,
     };
     this.captures.set(requestId, result);
+    const order = this.orders.get(paypalOrderId);
+    if (order) order.status = "COMPLETED"; // like PayPal: a captured order is COMPLETED, even if still clearing
     return Promise.resolve(result);
   }
 

@@ -1,5 +1,6 @@
 import type {
   ChatLine,
+  IntentInput,
   PaymentLeadInInput,
   QuestionInput,
   ReadOrderInput,
@@ -45,6 +46,16 @@ export function questionPrompt(input: QuestionInput): string {
     `Recent chat:\n${chatText(input.chat)}\n\nWrite one short message asking the customer for:\n${asks}\n` +
     "Mention the options in the text; they also appear as buttons the customer can tap."
   );
+}
+
+export const INTENT_SYSTEM =
+  `You read a chat between ${SHOP_NAME} and a customer and say what the customer wants in their LATEST message, ` +
+  "and quote their exact words. order_details: about what to buy (product, size, colour, quantity). " +
+  "ready_to_pay: wants to pay or asks for the link. payment_question: a question about paying. " +
+  "refund_request: wants to return, cancel or get their money back. other: anything else (thanks, hello).";
+
+export function intentPrompt(input: IntentInput): string {
+  return `The order is: ${input.orderStatus}.\n\nChat:\n${chatText(input.chat)}`;
 }
 
 export function leadInPrompt(input: PaymentLeadInInput): string {

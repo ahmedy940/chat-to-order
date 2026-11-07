@@ -3,6 +3,14 @@ import { CURRENCY } from "./types";
 /** The PayPal side of an order: which PayPal order, which capture, which refund, and who paid. */
 
 const PAYPAL_COMPLETED = "COMPLETED";
+/** PayPal took the money but is still clearing it (for example a bank payment, reason ECHECK). */
+const PAYPAL_PENDING = "PENDING";
+const ACCEPTED_STATUSES = [PAYPAL_COMPLETED, PAYPAL_PENDING];
+
+/** A captured payment PayPal is still clearing: it counts as paid (the customer paid), shown as clearing. */
+export function isClearing(paypalStatus: string | null): boolean {
+  return paypalStatus === PAYPAL_PENDING;
+}
 
 export interface ShippingAddress {
   line1: string | null;
@@ -32,10 +40,13 @@ export interface CaptureResult {
   netCents: number | null;
 }
 
-/** What was wrong with a capture (status, currency or amount), or null when it matches the expected total. */
+/**
+ * What was wrong with a capture (status, currency or amount), or null when it matches the expected total.
+ * PENDING is accepted: the customer has paid and must never be asked to pay again.
+ */
 export function captureMismatch(capture: CaptureResult, expectedCents: number | null): string | null {
   const ok =
-    capture.status === PAYPAL_COMPLETED &&
+    ACCEPTED_STATUSES.includes(capture.status) &&
     capture.currency === CURRENCY &&
     capture.amountCents === expectedCents;
   return ok ? null : `${capture.status} ${capture.currency} ${(capture.amountCents / 100).toFixed(2)}`;

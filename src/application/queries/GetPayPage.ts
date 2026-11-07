@@ -3,7 +3,7 @@ import { OrderStatus, SHOP_NAME } from "@/domain/types";
 import { requireOrderByToken } from "../orderSupport";
 import type { OrderRepository } from "../ports/OrderRepository";
 
-export type PayPageState = "awaiting" | "paid" | "refunded" | "cancelled";
+export type PayPageState = "awaiting" | "checking" | "paid" | "refunded" | "cancelled";
 
 export interface PayPageLine {
   name: string;
@@ -38,7 +38,7 @@ export class GetPayPage {
       shopName: SHOP_NAME,
       orderNumber: order.number,
       // A pay link only exists once payment was requested, so an unknown status means it's cancelled.
-      state: STATE_BY_STATUS[order.status] ?? "cancelled",
+      state: order.amountMismatch ? "checking" : (STATE_BY_STATUS[order.status] ?? "cancelled"),
       lines: order.items().map((item) => ({
         name: item.name(),
         quantity: item.quantity(),

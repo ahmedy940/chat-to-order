@@ -49,6 +49,18 @@ export class Draft {
     return new Draft({ ...ids, kind: DraftKind.Payment, text, options: [], byAi: lead !== null });
   }
 
+  /** A gentle nudge to pay, with the same pay link (sent as a pay-link card). Fixed text. */
+  static reminder(
+    id: string,
+    conversationId: string,
+    order: OrderRef & { total: Money; payToken: string },
+    payUrl: string,
+  ): Draft {
+    const text = `Just a friendly reminder: order #${order.number} (${order.total.format()}) is ready whenever you are. Pay securely here: ${payUrl}`;
+    const ids = { id, conversationId, orderId: order.id, payToken: order.payToken };
+    return new Draft({ ...ids, kind: DraftKind.Payment, text, options: [], byAi: false });
+  }
+
   static thanks(id: string, conversationId: string, order: OrderRef, payerName: string | null): Draft {
     const firstName = payerName?.split(" ")[0];
     const greeting = firstName ? `Thank you, ${firstName}!` : "Thank you!";

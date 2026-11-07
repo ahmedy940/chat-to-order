@@ -1,7 +1,9 @@
 import { AskCustomer } from "@/application/AskCustomer";
 import { CancelOrder } from "@/application/CancelOrder";
 import { CapturePayment } from "@/application/CapturePayment";
+import { ApproveProposal, DismissProposal } from "@/application/DecideProposal";
 import { PreparePayPalOrder } from "@/application/PreparePayPalOrder";
+import { ProposeNextAction } from "@/application/ProposeNextAction";
 import { RefundPayment } from "@/application/RefundPayment";
 import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
 import { GetInbox } from "@/application/queries/GetInbox";
@@ -20,6 +22,7 @@ import { SqliteDraftRepository } from "@/infrastructure/db/SqliteDraftRepository
 import { SqliteMessageRepository } from "@/infrastructure/db/SqliteMessageRepository";
 import { SqliteOrderEventRepository } from "@/infrastructure/db/SqliteOrderEventRepository";
 import { SqliteOrderRepository } from "@/infrastructure/db/SqliteOrderRepository";
+import { SqliteProposalRepository } from "@/infrastructure/db/SqliteProposalRepository";
 import { SqliteUnitOfWork } from "@/infrastructure/db/SqliteUnitOfWork";
 import { PAYPAL_SANDBOX_URL, PayPalRestGateway } from "@/infrastructure/payments/PayPalRestGateway";
 import { RandomIds, RandomTokens, SystemClock } from "@/infrastructure/system";
@@ -43,6 +46,7 @@ function adapters(db: Db) {
     orders: new SqliteOrderRepository(db),
     events: new SqliteOrderEventRepository(db),
     drafts: new SqliteDraftRepository(db),
+    proposals: new SqliteProposalRepository(db),
     uow: new SqliteUnitOfWork(db),
     clock: new SystemClock(),
     ids: new RandomIds(),
@@ -64,6 +68,10 @@ function adapters(db: Db) {
  */
 function build(db: Db) {
   const a = adapters(db);
+  const requestPayment = new RequestPayment(a);
+  const refundPayment = new RefundPayment(a);
+  // Approving a proposal runs the same use cases as the order card's buttons.
+  const decisions = { ...a, requestPayment, refundPayment };
   return {
     receiveCustomerMessage: new ReceiveCustomerMessage(a),
     sendReply: new SendReply(a),
@@ -72,11 +80,14 @@ function build(db: Db) {
     startOrder: new StartOrder(a),
     addItem: new AddItem(a),
     settleDetail: new SettleDetail(a),
-    requestPayment: new RequestPayment(a),
+    requestPayment,
     preparePayPalOrder: new PreparePayPalOrder(a),
     capturePayment: new CapturePayment(a),
-    refundPayment: new RefundPayment(a),
+    refundPayment,
     cancelOrder: new CancelOrder(a),
+    proposeNextAction: new ProposeNextAction(a),
+    approveProposal: new ApproveProposal(decisions),
+    dismissProposal: new DismissProposal(decisions),
     getInbox: new GetInbox(a),
     getSellerConversation: new GetSellerConversation(a),
     getCustomerConversation: new GetCustomerConversation(a),

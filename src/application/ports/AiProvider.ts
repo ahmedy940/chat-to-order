@@ -1,4 +1,5 @@
 import type { OrderReading } from "@/domain/OrderSnapshot";
+import type { Intent } from "@/domain/types";
 
 /** One line of the chat, as the AI sees it. */
 export interface ChatLine {
@@ -24,6 +25,19 @@ export interface QuestionInput {
   asks: { label: string; options: string[] }[];
 }
 
+export interface IntentInput {
+  /** The last few lines of the chat; the customer's latest message is last. */
+  chat: ChatLine[];
+  /** "Awaiting payment", "Paid"… so "can I return them?" is read in context. */
+  orderStatus: string;
+}
+
+export interface IntentOutput {
+  intent: Intent;
+  /** The customer's words that show it. */
+  quote: string | null;
+}
+
 export interface PaymentLeadInInput {
   customerName: string;
   /** "2 × Beige linen dress (M)". The AI never sees or writes amounts or links. */
@@ -36,6 +50,8 @@ export interface PaymentLeadInInput {
  */
 export interface AiProvider {
   readOrder(input: ReadOrderInput): Promise<ReadOrderOutput>;
+  /** What the customer wants in their latest message. The policy, not the AI, decides what to propose. */
+  classifyIntent(input: IntentInput): Promise<IntentOutput>;
   writeQuestion(input: QuestionInput): Promise<string>;
   writePaymentLeadIn(input: PaymentLeadInInput): Promise<string>;
 }

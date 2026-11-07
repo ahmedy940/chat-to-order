@@ -20,6 +20,14 @@ export interface PolicyInput {
  * always come from the order itself.
  */
 export class NextActionPolicy {
+  /**
+   * Whether the customer's intent changes the proposal. While an order is being filled in, the order alone
+   * decides (Ask or Request payment), so no AI call is needed; once payment is requested, it matters.
+   */
+  needsIntent(order: Order | null): boolean {
+    return order?.status === OrderStatus.AwaitingPayment || order?.status === OrderStatus.Paid;
+  }
+
   propose({ intent, quote, order }: PolicyInput): AgentProposalDraft | null {
     if (intent === null || order === null) return null;
     if (order.isEditable()) return this.forEditable(order);

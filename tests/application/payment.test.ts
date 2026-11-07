@@ -150,3 +150,29 @@ describe("Paying on the pay page", () => {
     await expect(w.preparePayPal.execute(payToken)).rejects.toThrow("already paid");
   });
 });
+
+describe("Never taking a second payment", () => {
+  it("counts a payment PayPal is still clearing (a bank payment) as paid, and says so", async () => {
+    const w = appWorld();
+    w.gateway.captureOverride = { status: "PENDING" };
+    const { conversationId, orderId, payToken, result } = await paidOrder(w);
+
+    expect(result.outcome).toBe("paid");
+    expect(w.orders.get(orderId)?.status).toBe(OrderStatus.Paid);
+    expect(w.sellerView.execute(conversationId).order?.payment?.clearing).toBe(true);
+    expect(w.events.listByOrder(orderId).at(-1)?.summary).toBe(
+      "Paid by Sarah Lee (PayPal is still clearing it)",
+    );
+    await expect(w.preparePayPal.execute(payToken)).rejects.toThrow("already paid");
+  });
+
+  it("won't start a new PayPal payment once PayPal has taken one, even if the shop must check it", async () => {
+    const w = appWorld();
+    w.gateway.captureOverride = { amountCents: 100 };
+    const { payToken } = await paidOrder(w);
+
+    expect(w.payPage.execute(payToken).state).toBe("checking");
+    await expect(w.preparePayPal.execute(payToken)).rejects.toThrow("No need to pay again");
+    expect(w.gateway.created).toHaveLength(1);
+  });
+});

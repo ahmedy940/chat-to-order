@@ -72,6 +72,10 @@ export class ReadOrder {
     const event = order.applyReading(result.reading, () => ids.newId());
     saveWithEvents(this.deps, order, event);
     saveQuestion(this.deps, order, result.question);
+    // The card changed, so the agent takes another look on the next poll.
+    const conversation = this.deps.conversations.get(conversationId);
+    conversation?.requestAgentPass();
+    if (conversation) this.deps.conversations.save(conversation);
     return { orderId: order.id };
   }
 }

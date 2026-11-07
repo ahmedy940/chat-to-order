@@ -16,6 +16,7 @@ import { SqliteDraftRepository } from "@/infrastructure/db/SqliteDraftRepository
 import { SqliteMessageRepository } from "@/infrastructure/db/SqliteMessageRepository";
 import { SqliteOrderEventRepository } from "@/infrastructure/db/SqliteOrderEventRepository";
 import { SqliteOrderRepository } from "@/infrastructure/db/SqliteOrderRepository";
+import { SqliteProposalRepository } from "@/infrastructure/db/SqliteProposalRepository";
 import { SqliteUnitOfWork } from "@/infrastructure/db/SqliteUnitOfWork";
 import { RandomIds, RandomTokens, SystemClock } from "@/infrastructure/system";
 import { FakeAiProvider } from "../fakes/fakeAi";
@@ -37,6 +38,7 @@ function wire(db: Db) {
     orders: new SqliteOrderRepository(db),
     events: new SqliteOrderEventRepository(db),
     drafts: new SqliteDraftRepository(db),
+    proposals: new SqliteProposalRepository(db),
     uow: new SqliteUnitOfWork(db),
     clock: new SystemClock(),
     ids: new RandomIds(),

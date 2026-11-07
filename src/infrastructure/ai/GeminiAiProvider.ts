@@ -1,6 +1,8 @@
 import {
   AiUnavailable,
   type AiProvider,
+  type IntentInput,
+  type IntentOutput,
   type PaymentLeadInInput,
   type QuestionInput,
   type ReadOrderInput,
@@ -13,8 +15,16 @@ import {
   GeminiJsonClient,
   ThinkingLevel,
 } from "./GeminiJsonClient";
-import { leadInPrompt, questionPrompt, READ_SYSTEM, readPrompt, WRITE_SYSTEM } from "./prompts";
-import { OrderReadingSchema, TextSchema, toOrderReading } from "./schemas";
+import {
+  INTENT_SYSTEM,
+  intentPrompt,
+  leadInPrompt,
+  questionPrompt,
+  READ_SYSTEM,
+  readPrompt,
+  WRITE_SYSTEM,
+} from "./prompts";
+import { IntentSchema, OrderReadingSchema, TextSchema, toOrderReading } from "./schemas";
 
 export interface GeminiConfig {
   apiKey: string;
@@ -36,6 +46,15 @@ export class GeminiAiProvider implements AiProvider {
       gemini.generate({ model, system: READ_SYSTEM, prompt: readPrompt(input), schema: OrderReadingSchema }),
     );
     return { reading: toOrderReading(dto), question: dto.draft.text };
+  }
+
+  async classifyIntent(input: IntentInput): Promise<IntentOutput> {
+    const model = this.config.writeModel || DEFAULT_INTENT_MODEL;
+    const thinking = ThinkingLevel.MINIMAL;
+    const prompt = intentPrompt(input);
+    return this.ask((gemini) =>
+      gemini.generate({ model, system: INTENT_SYSTEM, prompt, schema: IntentSchema, thinking }),
+    );
   }
 
   writeQuestion(input: QuestionInput): Promise<string> {

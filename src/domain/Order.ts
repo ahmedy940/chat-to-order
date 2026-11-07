@@ -4,7 +4,7 @@ import { OrderDetail } from "./OrderDetail";
 import { balanceCents, newEvent, type NewOrderEvent } from "./OrderEvent";
 import { OrderItem } from "./OrderItem";
 import type { OrderReading, OrderSnapshot } from "./OrderSnapshot";
-import { Payment, captureMismatch, type CaptureResult, type RefundResult } from "./Payment";
+import { Payment, captureMismatch, isClearing, type CaptureResult, type RefundResult } from "./Payment";
 import { Actor, EventType, OrderField, OrderStatus, type DetailRef } from "./types";
 
 export type { OrderReading, OrderSnapshot } from "./OrderSnapshot";
@@ -218,7 +218,8 @@ export class Order {
     this.requirePayment().recordCapture(capture);
     Object.assign(this.state, { status: OrderStatus.Paid, amountMismatch: false });
     const { amountCents, feeCents, netCents, captureId: paypalRef } = capture;
-    const summary = `Paid by ${capture.payer.name ?? "the customer"}`;
+    const clearing = isClearing(capture.status) ? " (PayPal is still clearing it)" : "";
+    const summary = `Paid by ${capture.payer.name ?? "the customer"}${clearing}`;
     return newEvent(EventType.PaymentCaptured, Actor.PayPal, summary, {
       amountCents,
       feeCents,

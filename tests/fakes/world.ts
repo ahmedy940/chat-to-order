@@ -28,6 +28,9 @@ import {
 import { FakeAiProvider } from "./fakeAi";
 import { AskCustomer } from "@/application/AskCustomer";
 import { ReadOrder } from "@/application/ReadOrder";
+import { ApproveProposal, DismissProposal } from "@/application/DecideProposal";
+import { ProposeNextAction } from "@/application/ProposeNextAction";
+import { InMemoryProposals } from "./inMemoryProposals";
 
 export const PAY_BASE = "https://shop.test/pay/";
 
@@ -40,6 +43,7 @@ export function appWorld() {
     orders: new InMemoryOrders(),
     events: new InMemoryOrderEvents(),
     drafts: new InMemoryDrafts(),
+    proposals: new InMemoryProposals(),
     uow: new ImmediateUnitOfWork(),
     clock: new FixedClock(),
     ids: new SequentialIds(),
@@ -49,6 +53,9 @@ export function appWorld() {
     ai: new FakeAiProvider(),
     payUrl: (payToken: string) => `${PAY_BASE}${payToken}`,
   };
+  const requestPayment = new RequestPayment(a);
+  const refund = new RefundPayment(a);
+  const decisions = { ...a, requestPayment, refundPayment: refund };
   return {
     ...a,
     receive: new ReceiveCustomerMessage(a),
@@ -58,11 +65,14 @@ export function appWorld() {
     startOrder: new StartOrder(a),
     addItem: new AddItem(a),
     settle: new SettleDetail(a),
-    requestPayment: new RequestPayment(a),
+    requestPayment,
     preparePayPal: new PreparePayPalOrder(a),
     capture: new CapturePayment(a),
-    refund: new RefundPayment(a),
+    refund,
     cancel: new CancelOrder(a),
+    agent: new ProposeNextAction(a),
+    approve: new ApproveProposal(decisions),
+    dismiss: new DismissProposal(decisions),
     inbox: new GetInbox(a),
     sellerView: new GetSellerConversation(a),
     customerView: new GetCustomerConversation(a),

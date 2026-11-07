@@ -40,7 +40,15 @@ function InboxRowButton({ row, onOpen }: { row: InboxRow; onOpen: (id: string) =
       className="flex w-full flex-col gap-1 px-4 py-3 text-left hover:bg-page"
     >
       <span className="flex items-baseline justify-between gap-2">
-        <span className="truncate font-semibold">{row.customerName}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          {row.hasProposal && (
+            <span
+              aria-label="The agent has a suggestion"
+              className="h-2.5 w-2.5 shrink-0 rounded-full bg-ai"
+            />
+          )}
+          <span className="truncate font-semibold">{row.customerName}</span>
+        </span>
         {last && <span className="shrink-0 text-[12px] text-muted">{formatTime(last.at)}</span>}
       </span>
       <span className="flex items-center justify-between gap-2">

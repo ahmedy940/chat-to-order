@@ -108,7 +108,7 @@ describe("Paying", () => {
     expect(order.status).toBe(OrderStatus.Paid);
   });
 
-  it.each([{ amountCents: 9900 }, { currency: "EUR" }, { status: "PENDING" }])(
+  it.each([{ amountCents: 9900 }, { currency: "EUR" }, { status: "DECLINED" }])(
     "flags a mismatch (%o) and stays Awaiting payment",
     (overrides) => {
       const order = awaitingPaymentOrder();

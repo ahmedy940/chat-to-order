@@ -85,6 +85,12 @@ export class PayLinkNotFound extends DomainError {
   }
 }
 
+export class ProposalNotFound extends DomainError {
+  constructor() {
+    super("NOT_FOUND", "That suggestion is no longer there. The customer may have written again.");
+  }
+}
+
 export class NothingToRead extends DomainError {
   constructor() {
     super("NOTHING_TO_READ", "There's nothing new from the customer to read yet.");

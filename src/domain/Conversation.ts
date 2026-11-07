@@ -64,6 +64,26 @@ export class Conversation {
     this.data = { ...this.data, lastCustomerMessageId: messageId };
   }
 
+  /** The agent hasn't looked at the customer's latest message yet. */
+  needsAgentPass(): boolean {
+    const { lastCustomerMessageId, lastHandledMessageId } = this.data;
+    return lastCustomerMessageId !== null && lastCustomerMessageId !== lastHandledMessageId;
+  }
+
+  get lastCustomerMessageId(): string | null {
+    return this.data.lastCustomerMessageId;
+  }
+
+  /** The agent looked at this message: it runs once per customer message. */
+  markHandled(messageId: string): void {
+    this.data = { ...this.data, lastHandledMessageId: messageId };
+  }
+
+  /** Ask the agent to look again (after Read order filled in the card). */
+  requestAgentPass(): void {
+    this.data = { ...this.data, lastHandledMessageId: null };
+  }
+
   snapshot(): ConversationSnapshot {
     return { ...this.data };
   }

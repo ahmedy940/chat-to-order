@@ -13,6 +13,7 @@ interface Props {
 const CLOSED_STATES: Record<Exclude<PayPageState, "awaiting">, string> = {
   paid: "This order is already paid.",
   refunded: "This order was refunded.",
+  checking: "We've received your payment and the shop is checking it. No need to pay again.",
   cancelled: "This order was cancelled by the shop.",
 };
 

@@ -4,13 +4,30 @@ import type { Order } from "@/domain/Order";
 import type { OrderDetail } from "@/domain/OrderDetail";
 import { DetailStatus, DraftKind, MessageDirection, type DetailRef } from "@/domain/types";
 import type { OrderDeps } from "./orderSupport";
-import type { ChatLine } from "./ports/AiProvider";
+import type { AiProvider, ChatLine } from "./ports/AiProvider";
+import type { MessageRepository } from "./ports/MessageRepository";
 
 /** Turning chats and orders into the text the AI reads, and the question draft it writes. */
 
 export interface Ask {
   label: string;
   options: string[];
+}
+
+/** How much of the chat the AI sees when writing a question: enough for tone, not the whole history. */
+const RECENT_LINES = 12;
+
+/** The AI's question for everything still open, or null when the AI is down (a plain question is used then). */
+export async function writeQuestionText(
+  deps: { messages: MessageRepository; ai: AiProvider },
+  order: Order,
+): Promise<string | null> {
+  const chat = toChat(deps.messages.listByConversation(order.conversationId)).slice(-RECENT_LINES);
+  try {
+    return await deps.ai.writeQuestion({ chat, asks: asksFor(order) });
+  } catch {
+    return null;
+  }
 }
 
 export function toChat(messages: Message[]): ChatLine[] {

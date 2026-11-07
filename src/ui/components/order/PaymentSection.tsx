@@ -23,6 +23,11 @@ export function PaymentSection({ order, payment }: { order: OrderView; payment: 
       <Field label="PayPal order" value={payment.paypalOrderId} mono />
       <Field label="Transaction ID" value={payment.captureId} mono />
       <Field label="Refund ID" value={payment.refundId} mono />
+      {payment.clearing && (
+        <p className="rounded-md bg-awaiting-bg px-2 py-1 text-[13px] text-awaiting-fg">
+          PayPal is still clearing this payment (paid from a bank account).
+        </p>
+      )}
     </section>
   );
 }

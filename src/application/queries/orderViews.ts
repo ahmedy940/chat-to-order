@@ -4,7 +4,7 @@ import { Order } from "@/domain/Order";
 import type { OrderDetail } from "@/domain/OrderDetail";
 import type { OrderEvent } from "@/domain/OrderEvent";
 import type { OrderItem } from "@/domain/OrderItem";
-import type { PayerDetails, ShippingAddress } from "@/domain/Payment";
+import { isClearing, type PayerDetails, type ShippingAddress } from "@/domain/Payment";
 import {
   ACTOR_LABELS,
   FIELD_LABELS,
@@ -48,6 +48,8 @@ export interface PaymentView {
   payerEmail: string | null;
   shipName: string | null;
   shipAddress: string | null;
+  /** PayPal accepted the payment but is still clearing it (a bank payment). */
+  clearing: boolean;
 }
 
 export interface TimelineLine {
@@ -165,6 +167,7 @@ function toPaymentView(order: Order, payUrl: PayUrl): PaymentView | null {
     paypalOrderId: payment.paypalOrderId,
     captureId: payment.captureId,
     refundId: payment.refundId,
+    clearing: isClearing(payment.paypalStatus),
     ...toPayerView(payment.payer),
   };
 }

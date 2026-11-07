@@ -24,7 +24,10 @@ export class PreparePayPalOrder {
     const order = requireOrderByToken(this.deps.orders, payToken);
     assertPayable(order);
     const existing = order.payment?.paypalOrderId ?? null;
-    if (existing && (await this.isStillPayable(existing))) return { paypalOrderId: existing };
+    const status = existing ? await this.statusOf(existing) : null;
+    // PayPal already took money for this order: never start a second payment.
+    if (status === PAYPAL_ORDER_COMPLETED) throw new PaymentNotOpen(CHECKING);
+    if (existing && status && STILL_PAYABLE.includes(status)) return { paypalOrderId: existing };
 
     const attempt = (order.payment?.attempt ?? 0) + 1;
     const request = toPayPalRequest(order, this.deps.payUrl(payToken));
@@ -37,19 +40,24 @@ export class PreparePayPalOrder {
     return { paypalOrderId: created.paypalOrderId };
   }
 
-  /** An expired or unknown PayPal order isn't an error: we simply make a new one. */
-  private async isStillPayable(paypalOrderId: string): Promise<boolean> {
+  /** An expired or unknown PayPal order isn't an error (null): we simply make a new one. */
+  private async statusOf(paypalOrderId: string): Promise<string | null> {
     try {
-      return STILL_PAYABLE.includes(await this.deps.gateway.getOrderStatus(paypalOrderId));
+      return await this.deps.gateway.getOrderStatus(paypalOrderId);
     } catch (error) {
-      if (error instanceof PaymentGatewayError && !error.retryable) return false;
+      if (error instanceof PaymentGatewayError && !error.retryable) return null;
       throw error;
     }
   }
 }
 
+/** PayPal's status for an order whose payment was captured (even one still clearing). */
+const PAYPAL_ORDER_COMPLETED = "COMPLETED";
+const CHECKING = "We've received a payment for this order and the shop is checking it. No need to pay again.";
+
 export function assertPayable(order: Order): void {
   if (order.status === OrderStatus.Paid) throw new PaymentNotOpen("This order is already paid.");
+  if (order.amountMismatch) throw new PaymentNotOpen(CHECKING);
   if (order.status === OrderStatus.Cancelled)
     throw new PaymentNotOpen("This order was cancelled by the shop.");
   if (order.status !== OrderStatus.AwaitingPayment)

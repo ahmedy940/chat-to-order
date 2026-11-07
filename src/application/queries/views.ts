@@ -1,5 +1,5 @@
 import type { Message } from "@/domain/Message";
-import type { MessageDirection, MessageKind } from "@/domain/types";
+import type { MessageDirection, MessageKind, ProposalKind } from "@/domain/types";
 import type { OrderRepository } from "../ports/OrderRepository";
 import type { PayUrl } from "../ports/TokenFactory";
 import type { DraftView, OrderView } from "./orderViews";
@@ -28,6 +28,8 @@ export interface InboxRow {
   lastMessage: { text: string; direction: MessageDirection; at: string } | null;
   /** "Chatting" until the conversation has an order, then the order's status. */
   status: string;
+  /** The agent has a suggestion waiting: a blue dot, and the row comes first. */
+  hasProposal: boolean;
 }
 
 export interface SellerConversationView {
@@ -38,6 +40,21 @@ export interface SellerConversationView {
   draft: DraftView | null;
   /** "Read order" before the first reading, "Read again" after new customer messages, otherwise null. */
   readAction: "Read order" | "Read again" | null;
+  /** The agent's open suggestion, if any. */
+  proposal: ProposalView | null;
+}
+
+export interface ProposalView {
+  id: string;
+  kind: ProposalKind;
+  /** "Request payment for #1001?" */
+  title: string;
+  reason: string;
+  /** The customer's words it's based on. */
+  quote: string | null;
+  approveLabel: string;
+  /** Asked before approving a refund: "Refund $128.00 to Sarah Lee? This can't be undone." */
+  confirm: string | null;
 }
 
 export interface CustomerConversationView {

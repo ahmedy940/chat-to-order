@@ -1,12 +1,15 @@
 import {
   AiUnavailable,
   type AiProvider,
+  type IntentInput,
+  type IntentOutput,
   type PaymentLeadInInput,
   type QuestionInput,
   type ReadOrderInput,
   type ReadOrderOutput,
 } from "@/application/ports/AiProvider";
 import type { DetailReading } from "@/domain/OrderDetail";
+import { Intent } from "@/domain/types";
 
 /** Shorthands for writing what the pretend AI "read". */
 export const found = (value: string, quote: string): DetailReading => ({ value, status: "found", quote });
@@ -31,6 +34,15 @@ export class FakeAiProvider implements AiProvider {
   readOrder(input: ReadOrderInput): Promise<ReadOrderOutput> {
     this.asked.read.push(input);
     return this.failure ? Promise.reject(this.failure) : Promise.resolve(structuredClone(this.reading));
+  }
+
+  /** What the customer "wants" in their latest message. */
+  intent: IntentOutput = { intent: Intent.Other, quote: null };
+  readonly intentsAsked: IntentInput[] = [];
+
+  classifyIntent(input: IntentInput): Promise<IntentOutput> {
+    this.intentsAsked.push(input);
+    return this.failure ? Promise.reject(this.failure) : Promise.resolve({ ...this.intent });
   }
 
   writeQuestion(input: QuestionInput): Promise<string> {
