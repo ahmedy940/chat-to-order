@@ -60,3 +60,15 @@ export class DraftOutdated extends DomainError {
     super("DRAFT_OUTDATED", "Draft updated");
   }
 }
+
+export class InvalidMessage extends DomainError {
+  constructor(reason: string) {
+    super("INVALID_MESSAGE", reason);
+  }
+}
+
+export class ConversationNotFound extends DomainError {
+  constructor() {
+    super("NOT_FOUND", "That conversation doesn't exist any more. The demo may have been reset.");
+  }
+}

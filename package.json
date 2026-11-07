@@ -16,7 +16,8 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "check:ai": "tsx --env-file=.env.local scripts/check-ai.ts",
-    "check:paypal": "tsx --env-file=.env.local scripts/check-paypal.ts"
+    "check:paypal": "tsx --env-file=.env.local scripts/check-paypal.ts",
+    "db:reset": "tsx scripts/db-reset.ts"
   },
   "dependencies": {
     "@google/genai": "3.0.0",

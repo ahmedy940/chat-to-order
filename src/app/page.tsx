@@ -1,11 +1,10 @@
-export default function DemoPage() {
-  return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <section className="w-full max-w-sm rounded-card border border-line bg-card p-6">
-        <p className="text-[13px] text-muted">Linen and Co.</p>
-        <h1 className="mt-1 text-lg font-semibold">chat-to-order</h1>
-        <p className="mt-2 text-muted">The two-phone demo arrives in step 2.</p>
-      </section>
-    </main>
-  );
+import { connection } from "next/server";
+import { container } from "@/server/container";
+import { DemoPage } from "@/ui/components/DemoPage";
+
+/** The two-phone demo. Read at request time, so the customer phone reopens on the newest conversation. */
+export default async function Home() {
+  await connection();
+  const latest = container().getCustomerConversation.latestId();
+  return <DemoPage initialConversationId={latest} />;
 }

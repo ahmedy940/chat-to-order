@@ -1,0 +1,44 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import type { MessageView } from "@/application/queries/views";
+import { MessageDirection } from "@/domain/types";
+import { formatTime } from "../api";
+
+interface Props {
+  messages: MessageView[];
+  /** Whose phone this is: their own bubbles sit on the right. */
+  mine: MessageDirection;
+  empty: string;
+}
+
+/** The chat bubbles. Customer bubbles are white with a border; the shop's are dark with white text. */
+export function MessageList({ messages, mine, empty }: Props) {
+  const list = useRef<HTMLDivElement>(null);
+  // Keep the newest message in view. Scrolls only this list, never the whole page.
+  useEffect(() => {
+    if (list.current) list.current.scrollTop = list.current.scrollHeight;
+  }, [messages.length]);
+
+  return (
+    <div ref={list} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto bg-page px-3 py-4">
+      {messages.length === 0 && <p className="m-auto max-w-[260px] text-center text-muted">{empty}</p>}
+      {messages.map((message) => (
+        <Bubble key={message.id} message={message} isMine={message.direction === mine} />
+      ))}
+    </div>
+  );
+}
+
+function Bubble({ message, isMine }: { message: MessageView; isMine: boolean }) {
+  const fromShop = message.direction === MessageDirection.Out;
+  const colours = fromShop ? "bg-ink text-white" : "border border-line bg-card text-ink";
+  return (
+    <div className={`flex max-w-[78%] flex-col ${isMine ? "items-end self-end" : "items-start self-start"}`}>
+      <p className={`rounded-bubble px-3 py-2 break-words whitespace-pre-wrap ${colours}`}>{message.text}</p>
+      <time dateTime={message.at} className="mt-0.5 px-1 text-[11px] text-muted">
+        {formatTime(message.at)}
+      </time>
+    </div>
+  );
+}

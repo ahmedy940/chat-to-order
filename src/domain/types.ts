@@ -6,6 +6,18 @@ export const SHOP_NAME = "Linen and Co.";
 export const CURRENCY = "USD";
 export const MAX_OPTIONS = 3;
 export const FIRST_ORDER_NUMBER = 1001;
+export const MAX_MESSAGE_LENGTH = 1000;
+
+/** Where a conversation happens. Only the two-phone demo for now; WhatsApp is a later adapter. */
+export const Channel = { Demo: "demo" } as const;
+export type Channel = ValueOf<typeof Channel>;
+
+/** "in" came from the customer, "out" was sent by the shop. */
+export const MessageDirection = { In: "in", Out: "out" } as const;
+export type MessageDirection = ValueOf<typeof MessageDirection>;
+
+export const MessageKind = { Text: "text", OptionReply: "option_reply", PayLink: "pay_link" } as const;
+export type MessageKind = ValueOf<typeof MessageKind>;
 
 export const OrderStatus = {
   Draft: "Draft",
