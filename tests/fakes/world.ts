@@ -25,6 +25,9 @@ import {
   InMemoryOrderEvents,
   InMemoryOrders,
 } from "./inMemoryOrders";
+import { FakeAiProvider } from "./fakeAi";
+import { AskCustomer } from "@/application/AskCustomer";
+import { ReadOrder } from "@/application/ReadOrder";
 
 export const PAY_BASE = "https://shop.test/pay/";
 
@@ -43,12 +46,15 @@ export function appWorld() {
     tokens: new CountingTokens(),
     channel: new SavingChannel(messages),
     gateway: new FakePaymentGateway(),
+    ai: new FakeAiProvider(),
     payUrl: (payToken: string) => `${PAY_BASE}${payToken}`,
   };
   return {
     ...a,
     receive: new ReceiveCustomerMessage(a),
     reply: new SendReply(a),
+    readOrder: new ReadOrder(a),
+    askCustomer: new AskCustomer(a),
     startOrder: new StartOrder(a),
     addItem: new AddItem(a),
     settle: new SettleDetail(a),

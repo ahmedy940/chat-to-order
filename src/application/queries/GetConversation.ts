@@ -1,5 +1,8 @@
 import type { Conversation } from "@/domain/Conversation";
 import { ConversationNotFound } from "@/domain/errors";
+import type { Order } from "@/domain/Order";
+import type { OrderEvent } from "@/domain/OrderEvent";
+import { EventType, FINISHED_ORDER_STATUSES, MessageDirection } from "@/domain/types";
 import type { ConversationRepository } from "../ports/ConversationRepository";
 import type { DraftRepository } from "../ports/DraftRepository";
 import type { MessageRepository } from "../ports/MessageRepository";
@@ -50,8 +53,23 @@ export class GetSellerConversation extends ConversationQuery {
       messages,
       order: order ? toOrderView(order, events, this.deps.payUrl) : null,
       draft: toDraftView(this.deps.drafts.get(id)),
+      readAction: readAction(order, events, messages),
     };
   }
+}
+
+/** Offer Read order when there's no open order; Read again only when the customer wrote after the last reading. */
+function readAction(
+  order: Order | null,
+  events: OrderEvent[],
+  messages: MessageView[],
+): SellerConversationView["readAction"] {
+  if (!order || FINISHED_ORDER_STATUSES.includes(order.status)) return "Read order";
+  if (!order.isEditable()) return null;
+  const lastRead = events.filter((e) => e.type === EventType.OrderRead).at(-1)?.at;
+  if (!lastRead) return "Read order";
+  const newer = messages.some((m) => m.direction === MessageDirection.In && new Date(m.at) > lastRead);
+  return newer ? "Read again" : null;
 }
 
 /** The customer's view: only the chat, nothing the shop keeps to itself. */

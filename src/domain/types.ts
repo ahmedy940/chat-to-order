@@ -38,6 +38,13 @@ export const OrderStatus = {
 } as const;
 export type OrderStatus = ValueOf<typeof OrderStatus>;
 
+/** Done with: a new purchase in the same chat starts a new order. */
+export const FINISHED_ORDER_STATUSES: readonly OrderStatus[] = [
+  OrderStatus.Paid,
+  OrderStatus.Refunded,
+  OrderStatus.Cancelled,
+];
+
 /** How each status reads on screen. */
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   Draft: "Draft",

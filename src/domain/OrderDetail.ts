@@ -28,8 +28,29 @@ export interface DetailReading {
 const MAX_TEXT_LENGTH = 80;
 const MAX_QUANTITY = 999;
 
+/** Quantities written as words in a chat: "a white shirt", "one dress", "two of them". */
+const NUMBER_WORDS: Record<string, number> = {
+  a: 1,
+  an: 1,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+};
+
+/** "2", "2 dresses", "one" or "a" → a whole number from 1 to 999; anything else isn't a quantity. */
 function normalizeQuantity(text: string): string | null {
-  const quantity = /^\d+$/.test(text) ? Number(text) : 0;
+  const firstWord = text.toLowerCase().split(/\s+/)[0] ?? "";
+  const digits = /^\d+/.exec(firstWord)?.[0];
+  const quantity = digits ? Number(digits) : (NUMBER_WORDS[firstWord] ?? 0);
   return quantity > 0 && quantity <= MAX_QUANTITY ? String(quantity) : null;
 }
 

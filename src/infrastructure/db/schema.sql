@@ -31,7 +31,8 @@ CREATE TABLE drafts (
   text TEXT NOT NULL,
   options_json TEXT NOT NULL DEFAULT '[]',
   order_id TEXT,
-  pay_token TEXT
+  pay_token TEXT,
+  by_ai INTEGER NOT NULL DEFAULT 0 -- written by the AI: shown in AI blue
 );
 
 CREATE TABLE orders (

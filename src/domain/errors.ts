@@ -85,6 +85,12 @@ export class PayLinkNotFound extends DomainError {
   }
 }
 
+export class NothingToRead extends DomainError {
+  constructor() {
+    super("NOTHING_TO_READ", "There's nothing new from the customer to read yet.");
+  }
+}
+
 /** The pay page can't take money for this order (already paid, cancelled, or a different PayPal order). */
 export class PaymentNotOpen extends DomainError {
   constructor(reason: string) {

@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { z } from "zod";
+import { AiUnavailable } from "@/application/ports/AiProvider";
 import { PaymentGatewayError } from "@/application/ports/PaymentGateway";
 import { DomainError } from "@/domain/errors";
 
@@ -53,6 +54,13 @@ function errorResponse(error: unknown): Response {
   if (error instanceof DomainError) {
     const status = STATUS_BY_CODE[error.code] ?? 422;
     return Response.json({ error: error.message, code: error.code }, { status });
+  }
+  if (error instanceof AiUnavailable) {
+    // Nothing was saved; the seller can retry or type the details by hand.
+    return Response.json(
+      { error: error.message, code: error.busy ? "AI_BUSY" : "AI_UNAVAILABLE" },
+      { status: 503 },
+    );
   }
   if (error instanceof PaymentGatewayError) {
     // PayPal refused (for example INSTRUMENT_DECLINED) or couldn't be reached. Nothing changed on the order.

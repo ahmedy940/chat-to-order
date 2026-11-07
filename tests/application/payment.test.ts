@@ -6,7 +6,7 @@ import { filledOrder, paidOrder, startedOrder, typesOf } from "../fakes/scenario
 import { appWorld, PAY_BASE } from "../fakes/world";
 
 describe("Starting and filling in an order by hand", () => {
-  it("numbers orders from #1001 and reuses the conversation's open order", () => {
+  it("numbers orders from #1001 and reuses the conversation's open order", async () => {
     const w = appWorld();
     const { conversationId, orderId } = startedOrder(w);
 
@@ -14,7 +14,7 @@ describe("Starting and filling in an order by hand", () => {
     expect(w.startOrder.execute(conversationId).orderId).toBe(orderId);
   });
 
-  it("keeps the total up to date and logs each typed value on the timeline", () => {
+  it("keeps the total up to date and logs each typed value on the timeline", async () => {
     const w = appWorld();
     const { orderId } = filledOrder(w);
 
@@ -24,19 +24,19 @@ describe("Starting and filling in an order by hand", () => {
 });
 
 describe("RequestPayment", () => {
-  it("refuses while something is still missing", () => {
+  it("refuses while something is still missing", async () => {
     const w = appWorld();
     const { conversationId, orderId } = startedOrder(w);
 
-    expect(() => w.requestPayment.execute(orderId)).toThrow(OrderNotPayable);
+    await expect(w.requestPayment.execute(orderId)).rejects.toThrow(OrderNotPayable);
     expect(w.drafts.get(conversationId)).toBeNull();
   });
 
-  it("freezes the order, opens one pay link even when pressed twice, and drafts the payment message", () => {
+  it("freezes the order, opens one pay link even when pressed twice, and drafts the payment message", async () => {
     const w = appWorld();
     const { conversationId, orderId } = filledOrder(w);
-    const first = w.requestPayment.execute(orderId);
-    const second = w.requestPayment.execute(orderId);
+    const first = await w.requestPayment.execute(orderId);
+    const second = await w.requestPayment.execute(orderId);
 
     expect(second).toEqual(first);
     expect(first.payUrl).toBe(`${PAY_BASE}${first.payToken}`);
@@ -47,10 +47,10 @@ describe("RequestPayment", () => {
     );
   });
 
-  it("sends the payment draft as a pay-link card on the customer phone", () => {
+  it("sends the payment draft as a pay-link card on the customer phone", async () => {
     const w = appWorld();
     const { conversationId, orderId } = filledOrder(w);
-    w.requestPayment.execute(orderId);
+    await w.requestPayment.execute(orderId);
     const draft = w.drafts.get(conversationId);
     w.reply.execute({ conversationId, clientId: "client-0002", text: draft?.text ?? "", draftId: draft?.id });
 
@@ -60,10 +60,10 @@ describe("RequestPayment", () => {
     expect(w.drafts.get(conversationId)).toBeNull();
   });
 
-  it("refuses to send a draft that was replaced", () => {
+  it("refuses to send a draft that was replaced", async () => {
     const w = appWorld();
     const { conversationId, orderId } = filledOrder(w);
-    w.requestPayment.execute(orderId);
+    await w.requestPayment.execute(orderId);
     const stale = { conversationId, clientId: "client-0002", text: "old", draftId: "an-old-draft" };
 
     expect(() => w.reply.execute(stale)).toThrow(DraftOutdated);
@@ -74,7 +74,7 @@ describe("Paying on the pay page", () => {
   it("creates the PayPal order from the frozen order and reuses it while it can still be paid", async () => {
     const w = appWorld();
     const { orderId } = filledOrder(w);
-    const { payToken } = w.requestPayment.execute(orderId);
+    const { payToken } = await w.requestPayment.execute(orderId);
     const first = await w.preparePayPal.execute(payToken);
     const again = await w.preparePayPal.execute(payToken);
 
@@ -91,7 +91,7 @@ describe("Paying on the pay page", () => {
   it("makes a new PayPal order when the old one expired", async () => {
     const w = appWorld();
     const { orderId } = filledOrder(w);
-    const { payToken } = w.requestPayment.execute(orderId);
+    const { payToken } = await w.requestPayment.execute(orderId);
     const first = await w.preparePayPal.execute(payToken);
     w.gateway.expire(first.paypalOrderId);
 
@@ -131,7 +131,7 @@ describe("Paying on the pay page", () => {
   it("won't capture a PayPal order that belongs to something else", async () => {
     const w = appWorld();
     const { orderId } = filledOrder(w);
-    const { payToken } = w.requestPayment.execute(orderId);
+    const { payToken } = await w.requestPayment.execute(orderId);
     await w.preparePayPal.execute(payToken);
 
     await expect(w.capture.execute(payToken, "SOMEONEELSE1")).rejects.toThrow(PaymentNotOpen);

@@ -23,8 +23,8 @@ export function Composer({ placeholder, onSend, draft = null }: Props) {
           {sender.error}
         </p>
       )}
-      {draft && <p className="pb-1 text-[12px] font-medium text-muted">Draft · edit it or press Send</p>}
-      <ComposerField sender={sender} placeholder={placeholder} isDraft={draft !== null} />
+      {draft && <DraftLabel draft={draft} />}
+      <ComposerField sender={sender} placeholder={placeholder} draft={draft} />
     </form>
   );
 }
@@ -32,14 +32,34 @@ export function Composer({ placeholder, onSend, draft = null }: Props) {
 interface FieldProps {
   sender: ReturnType<typeof useSender>;
   placeholder: string;
-  isDraft: boolean;
+  draft: DraftView | null;
 }
 
-function ComposerField({ sender, placeholder, isDraft }: FieldProps) {
+/** AI blue only for what the AI wrote; fixed-text drafts stay gray. Lists the tap buttons that go with it. */
+function DraftLabel({ draft }: { draft: DraftView }) {
+  const chip = draft.byAi ? "bg-ai-soft text-ai" : "bg-set-bg text-set-fg";
+  return (
+    <p className="flex flex-wrap items-center gap-2 pb-1 text-[12px] text-muted">
+      <span className={`rounded-full px-2 py-0.5 font-medium ${chip}`}>
+        {draft.byAi ? "Draft by AI" : "Draft"}
+      </span>
+      <span>Edit it or press Send</span>
+      {draft.options.length > 0 && <span className="text-ai">Buttons: {draft.options.join(" · ")}</span>}
+    </p>
+  );
+}
+
+/** A dashed outline marks a draft: AI blue when the AI wrote it. */
+function borderFor(draft: DraftView | null): string {
+  if (!draft) return "border-line";
+  return draft.byAi ? "border-dashed border-ai" : "border-dashed border-muted";
+}
+
+function ComposerField({ sender, placeholder, draft }: FieldProps) {
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) void sender.submit(event);
   };
-  const border = isDraft ? "border-dashed border-muted" : "border-line";
+  const border = borderFor(draft);
   return (
     <div className="flex items-end gap-2">
       <textarea

@@ -18,6 +18,7 @@ import { SqliteOrderEventRepository } from "@/infrastructure/db/SqliteOrderEvent
 import { SqliteOrderRepository } from "@/infrastructure/db/SqliteOrderRepository";
 import { SqliteUnitOfWork } from "@/infrastructure/db/SqliteUnitOfWork";
 import { RandomIds, RandomTokens, SystemClock } from "@/infrastructure/system";
+import { FakeAiProvider } from "../fakes/fakeAi";
 
 const folders: string[] = [];
 
@@ -41,6 +42,7 @@ function wire(db: Db) {
     ids: new RandomIds(),
     tokens: new RandomTokens(),
     channel: new DemoChannel(messages),
+    ai: new FakeAiProvider(),
     payUrl: (token: string) => `https://shop.test/pay/${token}`,
   };
   return {
@@ -81,7 +83,7 @@ afterEach(() => {
 });
 
 describe("SQLite storage", () => {
-  it("keeps the chat after the database is closed and reopened (a server restart)", () => {
+  it("keeps the chat after the database is closed and reopened (a server restart)", async () => {
     const file = tempDbFile();
     const first = openDatabase(file);
     const app = wire(first);
@@ -102,7 +104,7 @@ describe("SQLite storage", () => {
     reopened.close();
   });
 
-  it("saves a repeated client ID once", () => {
+  it("saves a repeated client ID once", async () => {
     const app = wire(openDatabase(":memory:"));
     const send = { conversationId: null, clientId: "client-0001", text: "hi" };
     const first = app.receive.execute(send);
@@ -110,10 +112,10 @@ describe("SQLite storage", () => {
     expect(app.view.execute(first.conversationId).messages).toHaveLength(1);
   });
 
-  it("saves an order and loads back exactly the same order, numbered from #1001", () => {
+  it("saves an order and loads back exactly the same order, numbered from #1001", async () => {
     const app = wire(openDatabase(":memory:"));
     const { orderId } = filledOrder(app);
-    app.requestPayment.execute(orderId);
+    await app.requestPayment.execute(orderId);
 
     const order = app.orders.get(orderId);
     expect(order?.number).toBe(1001);
@@ -123,20 +125,20 @@ describe("SQLite storage", () => {
     expect(app.events.listByOrder(orderId).map((e) => e.seq)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it("never saves a status change without its timeline line (same transaction)", () => {
+  it("never saves a status change without its timeline line (same transaction)", async () => {
     const app = wire(openDatabase(":memory:"));
     const { orderId } = filledOrder(app);
     app.events.append = () => {
       throw new Error("disk full");
     };
 
-    expect(() => app.requestPayment.execute(orderId)).toThrow("disk full");
+    await expect(app.requestPayment.execute(orderId)).rejects.toThrow("disk full");
     const order = app.orders.get(orderId);
     expect(order?.status).toBe(OrderStatus.Draft);
     expect(order?.payToken).toBeNull();
   });
 
-  it("reset empties everything and restarts order numbers at 1001", () => {
+  it("reset empties everything and restarts order numbers at 1001", async () => {
     const db = openDatabase(":memory:");
     const app = wire(db);
     filledOrder(app);

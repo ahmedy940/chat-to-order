@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { CustomerConversationView } from "@/application/queries/views";
 import { MessageDirection, SHOP_NAME } from "@/domain/types";
-import { postJson } from "../api";
+import { newClientId, postJson } from "../api";
 import { usePolling } from "../hooks/usePolling";
 import { Composer } from "./Composer";
 import { MessageList } from "./MessageList";
@@ -15,12 +15,10 @@ export function CustomerChat({ initialConversationId }: { initialConversationId:
     conversationId ? `/api/customer/conversations/${conversationId}` : null,
   );
 
-  const send = async (text: string, clientId: string) => {
-    const sent = await postJson<{ conversationId: string }>("/api/customer/messages", {
-      conversationId,
-      clientId,
-      text,
-    });
+  /** `option`: the customer tapped one of the shop's buttons (the text is that option). */
+  const send = async (text: string, clientId: string, option = false) => {
+    const body = { conversationId, clientId, text, option };
+    const sent = await postJson<{ conversationId: string }>("/api/customer/messages", body);
     setConversationId(sent.conversationId);
     refresh();
   };
@@ -32,9 +30,10 @@ export function CustomerChat({ initialConversationId }: { initialConversationId:
         messages={data?.messages ?? []}
         mine={MessageDirection.In}
         empty={conversationId ? "" : `You're a new customer. Say hi to ${SHOP_NAME}.`}
+        onOption={(option) => void send(option, newClientId(), true).catch(() => undefined)}
       />
       {error && <p className="bg-missing-row px-3 py-1 text-[13px] text-missing-fg">{error}</p>}
-      <Composer placeholder={`Message ${SHOP_NAME}`} onSend={send} />
+      <Composer placeholder={`Message ${SHOP_NAME}`} onSend={(text, clientId) => send(text, clientId)} />
     </div>
   );
 }

@@ -17,7 +17,7 @@ const ItemSchema = z.object({
   product: DetailSchema,
   variant: DetailSchema.nullable().describe("Colour or style. Null when it doesn't apply to this product."),
   size: DetailSchema.nullable().describe("Size. Null when the product has no sizes."),
-  quantity: DetailSchema,
+  quantity: DetailSchema.describe("How many, as digits: write 1 for 'one' or 'a', 2 for 'two'."),
   unit_price: DetailSchema.describe("Only a price written in the chat. Never guess one."),
 });
 
@@ -30,6 +30,11 @@ export const OrderReadingSchema = z.object({
   }),
 });
 export type OrderReadingDto = z.infer<typeof OrderReadingSchema>;
+
+/** A short message the AI writes for the seller to review (a question, or the payment message's first line). */
+export const TextSchema = z.object({
+  text: z.string().min(1).max(500).describe("The message text only, ready to send."),
+});
 
 export const IntentSchema = z.object({
   intent: z.enum(Object.values(Intent) as [Intent, ...Intent[]]),

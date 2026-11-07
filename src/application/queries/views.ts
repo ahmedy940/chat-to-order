@@ -36,6 +36,8 @@ export interface SellerConversationView {
   messages: MessageView[];
   order: OrderView | null;
   draft: DraftView | null;
+  /** "Read order" before the first reading, "Read again" after new customer messages, otherwise null. */
+  readAction: "Read order" | "Read again" | null;
 }
 
 export interface CustomerConversationView {

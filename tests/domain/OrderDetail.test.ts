@@ -38,7 +38,22 @@ describe("OrderDetail", () => {
     fee.setBySeller("$8");
     expect(fee.value).toBe("8.00");
     expect(fee.money?.cents).toBe(800);
-    expect(() => OrderDetail.missing(ItemField.Quantity).setBySeller("two")).toThrow(InvalidDetailValue);
+    expect(() => OrderDetail.missing(ItemField.Quantity).setBySeller("lots")).toThrow(InvalidDetailValue);
+  });
+
+  it("reads quantities written the way people chat: 'one', 'a', 'two', '2 dresses'", () => {
+    const read = (words: string) => {
+      const quantity = OrderDetail.missing(ItemField.Quantity);
+      quantity.applyReading(found(words));
+      return quantity.value;
+    };
+    expect([read("one"), read("a"), read("Two"), read("2 dresses"), read("1000")]).toEqual([
+      "1",
+      "1",
+      "2",
+      "2",
+      null,
+    ]);
   });
 
   it("offers up to 3 options, never for a price", () => {

@@ -27,29 +27,34 @@ export interface NewMessage {
 export class Message {
   private constructor(private readonly data: MessageSnapshot) {}
 
-  static fromCustomer(input: NewMessage): Message {
-    return Message.create(input, MessageDirection.In);
+  /** A customer message. `isOption`: they tapped one of the buttons the shop offered. */
+  static fromCustomer(input: NewMessage, isOption = false): Message {
+    const kind = isOption ? MessageKind.OptionReply : MessageKind.Text;
+    return Message.create(input, { direction: MessageDirection.In, kind, options: [], payToken: null });
   }
 
-  /** A message from the shop. With a pay token it's the payment message, shown as a pay-link card. */
-  static fromShop(input: NewMessage, payToken: string | null = null): Message {
-    return Message.create(input, MessageDirection.Out, payToken);
+  /** A shop message, with tap buttons (`options`), or a pay-link card when it carries a pay token. */
+  static fromShop(input: NewMessage, extras: { payToken?: string | null; options?: readonly string[] } = {}) {
+    const payToken = extras.payToken ?? null;
+    const kind = payToken ? MessageKind.PayLink : MessageKind.Text;
+    const options = [...(extras.options ?? [])];
+    return Message.create(input, { direction: MessageDirection.Out, kind, options, payToken });
   }
 
   static restore(snapshot: MessageSnapshot): Message {
     return new Message({ ...snapshot, options: [...snapshot.options] });
   }
 
-  private static create(input: NewMessage, direction: MessageDirection, payToken: string | null = null) {
+  private static create(
+    input: NewMessage,
+    shape: Pick<MessageSnapshot, "direction" | "kind" | "options" | "payToken">,
+  ) {
     return new Message({
       id: input.id,
       conversationId: input.conversationId,
       clientId: input.clientId,
-      direction,
-      kind: payToken ? MessageKind.PayLink : MessageKind.Text,
+      ...shape,
       text: cleanText(input.text),
-      options: [],
-      payToken,
       createdAt: input.at,
     });
   }

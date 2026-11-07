@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { OrderView } from "@/application/queries/orderViews";
-import { errorText, postJson } from "../../api";
+import { useAction } from "../../hooks/useAction";
 
 interface Props {
   order: OrderView;
@@ -106,19 +106,4 @@ function ConfirmBox({ question, confirmLabel, busy, onYes, onNo }: BoxProps) {
       </div>
     </div>
   );
-}
-
-/** Posts once (the button is disabled while it runs) and keeps the server's reason on failure. */
-function useAction(url: string, onSuccess: () => void) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const run = () => {
-    setBusy(true);
-    setError(null);
-    postJson(url, {})
-      .then(onSuccess)
-      .catch((failure: unknown) => setError(errorText(failure)))
-      .finally(() => setBusy(false));
-  };
-  return { busy, error, run };
 }

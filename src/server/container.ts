@@ -1,3 +1,4 @@
+import { AskCustomer } from "@/application/AskCustomer";
 import { CancelOrder } from "@/application/CancelOrder";
 import { CapturePayment } from "@/application/CapturePayment";
 import { PreparePayPalOrder } from "@/application/PreparePayPalOrder";
@@ -5,13 +6,15 @@ import { RefundPayment } from "@/application/RefundPayment";
 import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
 import { GetInbox } from "@/application/queries/GetInbox";
 import { GetPayPage } from "@/application/queries/GetPayPage";
+import { ReadOrder } from "@/application/ReadOrder";
 import { ReceiveCustomerMessage } from "@/application/ReceiveCustomerMessage";
 import { RequestPayment } from "@/application/RequestPayment";
 import { SendReply } from "@/application/SendReply";
 import { AddItem, SettleDetail } from "@/application/SettleDetail";
 import { StartOrder } from "@/application/StartOrder";
+import { GeminiAiProvider } from "@/infrastructure/ai/GeminiAiProvider";
 import { DemoChannel } from "@/infrastructure/channels/DemoChannel";
-import { openDatabase, type Db } from "@/infrastructure/db/database";
+import { ensureSchema, openDatabase, type Db } from "@/infrastructure/db/database";
 import { SqliteConversationRepository } from "@/infrastructure/db/SqliteConversationRepository";
 import { SqliteDraftRepository } from "@/infrastructure/db/SqliteDraftRepository";
 import { SqliteMessageRepository } from "@/infrastructure/db/SqliteMessageRepository";
@@ -46,6 +49,11 @@ function adapters(db: Db) {
     tokens: new RandomTokens(),
     channel: new DemoChannel(messages),
     gateway,
+    ai: new GeminiAiProvider({
+      apiKey: process.env.GEMINI_API_KEY ?? "",
+      readModel: process.env.GEMINI_READ_MODEL,
+      writeModel: process.env.GEMINI_INTENT_MODEL,
+    }),
     payUrl: (payToken: string) => `${appBaseUrl()}/pay/${payToken}`,
   };
 }
@@ -59,6 +67,8 @@ function build(db: Db) {
   return {
     receiveCustomerMessage: new ReceiveCustomerMessage(a),
     sendReply: new SendReply(a),
+    readOrder: new ReadOrder(a),
+    askCustomer: new AskCustomer(a),
     startOrder: new StartOrder(a),
     addItem: new AddItem(a),
     settleDetail: new SettleDetail(a),
@@ -81,7 +91,9 @@ const shared = globalThis as typeof globalThis & { chatToOrderDb?: Db };
 let instance: Container | undefined;
 
 export function container(): Container {
+  if (instance) return instance;
   shared.chatToOrderDb ??= openDatabase(process.env.DATABASE_PATH || undefined);
-  instance ??= build(shared.chatToOrderDb);
+  ensureSchema(shared.chatToOrderDb); // after a dev reload, the kept connection may predate a schema change
+  instance = build(shared.chatToOrderDb);
   return instance;
 }

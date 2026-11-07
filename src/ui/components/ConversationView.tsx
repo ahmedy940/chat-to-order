@@ -64,6 +64,7 @@ function ConversationBody({ data, error, refresh }: BodyProps) {
       <OrderBar
         conversationId={data.conversationId}
         order={data.order}
+        readAction={data.readAction}
         onOpen={() => setSheetOpen(true)}
         onStarted={started}
       />

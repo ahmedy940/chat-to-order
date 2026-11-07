@@ -29,9 +29,13 @@ export class InMemoryOrders implements OrderRepository {
   }
 
   latestForConversation(conversationId: string): Order | null {
-    const mine = this.rows.filter((s) => s.conversationId === conversationId);
-    const last = mine[mine.length - 1];
-    return last ? Order.restore(structuredClone(last)) : null;
+    return this.listForConversation(conversationId).at(-1) ?? null;
+  }
+
+  listForConversation(conversationId: string): Order[] {
+    return this.rows
+      .filter((s) => s.conversationId === conversationId)
+      .map((s) => Order.restore(structuredClone(s)));
   }
 
   save(order: Order): void {

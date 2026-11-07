@@ -9,7 +9,7 @@ export const DEFAULT_DATABASE_PATH = path.join(process.cwd(), "data", "chat-to-o
 const SCHEMA_PATH = path.join(process.cwd(), "src", "infrastructure", "db", "schema.sql");
 
 /** Bump when schema.sql changes: an older database file is then rebuilt from scratch (demo data only). */
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 /** Children before parents, so clearing never trips a foreign key. */
 const TABLES_CHILD_FIRST = [
@@ -31,7 +31,6 @@ export function openDatabase(file: string = DEFAULT_DATABASE_PATH): Db {
   db.pragma("journal_mode = WAL");
   db.pragma("busy_timeout = 3000");
   ensureSchema(db);
-  db.pragma("foreign_keys = ON");
   return db;
 }
 
@@ -43,15 +42,21 @@ export function resetDatabase(db: Db): void {
   })();
 }
 
-function ensureSchema(db: Db): void {
-  if (db.pragma("user_version", { simple: true }) === SCHEMA_VERSION) return;
-  db.pragma("foreign_keys = OFF");
-  db.transaction(() => {
-    for (const table of TABLES_CHILD_FIRST) db.prepare(`DROP TABLE IF EXISTS ${table}`).run();
-    db.exec(readFileSync(SCHEMA_PATH, "utf8"));
-    seedSequences(db);
-    db.pragma(`user_version = ${SCHEMA_VERSION}`);
-  })();
+/**
+ * Rebuilds the tables when schema.sql's version changed (demo data only). Also called when the server's code
+ * reloads during development, so a running dev server picks up a new schema without a restart.
+ */
+export function ensureSchema(db: Db): void {
+  if (db.pragma("user_version", { simple: true }) !== SCHEMA_VERSION) {
+    db.pragma("foreign_keys = OFF");
+    db.transaction(() => {
+      for (const table of TABLES_CHILD_FIRST) db.prepare(`DROP TABLE IF EXISTS ${table}`).run();
+      db.exec(readFileSync(SCHEMA_PATH, "utf8"));
+      seedSequences(db);
+      db.pragma(`user_version = ${SCHEMA_VERSION}`);
+    })();
+  }
+  db.pragma("foreign_keys = ON");
 }
 
 function seedSequences(db: Db): void {

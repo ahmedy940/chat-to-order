@@ -1,4 +1,5 @@
 import type { DetailField } from "@/domain/types";
+import { dropQuestion } from "./orderText";
 import { requireOrder, saveWithEvents, type OrderDeps } from "./orderSupport";
 
 export interface SettleDetailInput {
@@ -18,6 +19,8 @@ export class SettleDetail {
       const order = requireOrder(this.deps.orders, input.orderId);
       const event = order.settle({ itemId: input.itemId, field: input.field }, input.value);
       saveWithEvents(this.deps, order, event);
+      // Typing the last thing the customer was going to be asked makes that question pointless.
+      if (order.askableDetails().length === 0) dropQuestion(this.deps, order);
       return { orderId: order.id };
     });
   }

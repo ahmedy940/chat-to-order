@@ -6,9 +6,12 @@ export interface DraftSnapshot {
   conversationId: string;
   kind: DraftKind;
   text: string;
+  /** Tap buttons sent with the message (the options the seller offered). */
   options: string[];
   orderId: string | null;
   payToken: string | null;
+  /** Written by the AI: shown in AI blue. Fixed-text drafts are gray. */
+  byAi: boolean;
 }
 
 interface OrderRef {
@@ -18,46 +21,52 @@ interface OrderRef {
 
 /**
  * The one prepared message waiting in the seller's reply box. Nothing is sent until the seller presses Send.
- * Payment and thank-you messages use fixed text for now; the AI writes questions from step 5.
+ * The AI writes questions and the payment message's opening line; our code always inserts the order number,
+ * total and link. Thank-you and refund messages are fixed text.
  */
 export class Draft {
   private constructor(private readonly data: DraftSnapshot) {}
 
-  static paymentRequest(
-    id: string,
-    conversationId: string,
-    order: OrderRef & { total: Money; payToken: string },
-    payUrl: string,
-  ): Draft {
-    const text = `Here's your order #${order.number}, total ${order.total.format()}. Pay securely here: ${payUrl}`;
-    const kind = DraftKind.Payment;
-    return new Draft({
-      id,
-      conversationId,
-      kind,
-      text,
-      options: [],
-      orderId: order.id,
-      payToken: order.payToken,
-    });
+  /** Asks the customer only for what's still missing, with the offered options as tap buttons. */
+  static question(q: Omit<DraftSnapshot, "kind" | "payToken">): Draft {
+    return new Draft({ ...q, kind: DraftKind.Question, options: [...q.options], payToken: null });
+  }
+
+  /** `lead` is the AI's friendly opening line; without it, a fixed sentence. */
+  static paymentRequest(p: {
+    id: string;
+    conversationId: string;
+    order: OrderRef & { total: Money; payToken: string };
+    payUrl: string;
+    lead: string | null;
+  }): Draft {
+    const { order, payUrl, lead } = p;
+    const total = order.total.format();
+    const text = lead
+      ? `${lead}\n\nOrder #${order.number} · total ${total}\nPay securely here: ${payUrl}`
+      : `Here's your order #${order.number}, total ${total}. Pay securely here: ${payUrl}`;
+    const ids = { id: p.id, conversationId: p.conversationId, orderId: order.id, payToken: order.payToken };
+    return new Draft({ ...ids, kind: DraftKind.Payment, text, options: [], byAi: lead !== null });
   }
 
   static thanks(id: string, conversationId: string, order: OrderRef, payerName: string | null): Draft {
     const firstName = payerName?.split(" ")[0];
     const greeting = firstName ? `Thank you, ${firstName}!` : "Thank you!";
     const text = `${greeting} We've received your payment for order #${order.number}. We'll let you know when it ships.`;
-    const kind = DraftKind.Thanks;
-    return new Draft({ id, conversationId, kind, text, options: [], orderId: order.id, payToken: null });
+    return Draft.fixed({ id, conversationId, kind: DraftKind.Thanks, text, orderId: order.id });
   }
 
   static refund(id: string, conversationId: string, order: OrderRef & { refunded: Money }): Draft {
     const text = `We've refunded ${order.refunded.format()} to your PayPal account for order #${order.number}. It can take a few days to show.`;
-    const kind = DraftKind.Refund;
-    return new Draft({ id, conversationId, kind, text, options: [], orderId: order.id, payToken: null });
+    return Draft.fixed({ id, conversationId, kind: DraftKind.Refund, text, orderId: order.id });
   }
 
   static restore(snapshot: DraftSnapshot): Draft {
     return new Draft({ ...snapshot, options: [...snapshot.options] });
+  }
+
+  private static fixed(f: Pick<DraftSnapshot, "id" | "conversationId" | "kind" | "text" | "orderId">): Draft {
+    return new Draft({ ...f, options: [], payToken: null, byAi: false });
   }
 
   get id(): string {
@@ -76,8 +85,16 @@ export class Draft {
     return this.data.text;
   }
 
+  get options(): readonly string[] {
+    return this.data.options;
+  }
+
   get payToken(): string | null {
     return this.data.payToken;
+  }
+
+  get byAi(): boolean {
+    return this.data.byAi;
   }
 
   snapshot(): DraftSnapshot {

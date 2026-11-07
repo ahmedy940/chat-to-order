@@ -29,6 +29,8 @@ export interface DetailView {
   status: DetailStatus | "optional";
   quote: string | null;
   sellerOnly: boolean;
+  /** The options offered to the customer for this detail (Ask customer). */
+  options: string[];
 }
 
 export interface ItemView {
@@ -86,6 +88,10 @@ export interface DraftView {
   id: string;
   kind: DraftKind;
   text: string;
+  /** The tap buttons that will be sent with it. */
+  options: string[];
+  /** Written by the AI: shown in AI blue. */
+  byAi: boolean;
 }
 
 export function toOrderView(order: Order, events: OrderEvent[], payUrl: PayUrl): OrderView {
@@ -109,7 +115,8 @@ export function toOrderView(order: Order, events: OrderEvent[], payUrl: PayUrl):
 }
 
 export function toDraftView(draft: Draft | null): DraftView | null {
-  return draft ? { id: draft.id, kind: draft.kind, text: draft.text } : null;
+  if (!draft) return null;
+  return { id: draft.id, kind: draft.kind, text: draft.text, options: [...draft.options], byAi: draft.byAi };
 }
 
 /** "2211 N First St, San Jose, CA 95131, US" */
@@ -139,13 +146,15 @@ function toDetailView(detail: OrderDetail, itemId: string | null): DetailView {
     status: s.status,
     quote: s.sourceQuote,
     sellerOnly: detail.isSellerOnly,
+    options: [...s.offeredOptions],
   };
 }
 
 function optionalDetail(itemId: string, field: DetailField): DetailView {
   const sellerOnly = SELLER_ONLY_FIELDS.includes(field);
   const label = FIELD_LABELS[field];
-  return { itemId, field, label, value: null, display: null, status: "optional", quote: null, sellerOnly };
+  const empty = { value: null, display: null, quote: null, options: [] };
+  return { itemId, field, label, ...empty, status: "optional", sellerOnly };
 }
 
 function toPaymentView(order: Order, payUrl: PayUrl): PaymentView | null {

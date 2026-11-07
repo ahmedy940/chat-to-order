@@ -60,7 +60,7 @@ describe("CancelOrder", () => {
   it("cancels before payment, removes the unsent payment message, and closes the pay link", async () => {
     const w = appWorld();
     const { conversationId, orderId } = filledOrder(w);
-    const { payToken } = w.requestPayment.execute(orderId);
+    const { payToken } = await w.requestPayment.execute(orderId);
     w.cancel.execute(orderId);
 
     expect(w.orders.get(orderId)?.status).toBe(OrderStatus.Cancelled);

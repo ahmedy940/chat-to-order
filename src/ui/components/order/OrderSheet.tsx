@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import type { ReactNode } from "react";
 import type { DetailView, ItemView, OrderView } from "@/application/queries/orderViews";
 import { OrderStatus } from "@/domain/types";
-import { errorText, patchJson, postJson } from "../../api";
+import { patchJson, postJson } from "../../api";
+import { useAction } from "../../hooks/useAction";
 import { DetailRow } from "./DetailRow";
 import { OrderActions } from "./OrderActions";
 import { OrderTimeline } from "./OrderTimeline";
@@ -18,26 +19,61 @@ interface Props {
 }
 
 type Save = (detail: DetailView) => (value: string) => Promise<void>;
+type Ask = (detail: DetailView) => (options: string[]) => Promise<void>;
+
+/** Typing a value, or offering options to the customer (the AI then rewrites the question in the reply box). */
+function detailActions(order: OrderView, onChanged: () => void): { save: Save; ask: Ask } {
+  const at = (detail: DetailView) => ({ itemId: detail.itemId, field: detail.field });
+  return {
+    save: (detail) => async (value) => {
+      await patchJson(`/api/orders/${order.id}/details`, { ...at(detail), value });
+      onChanged();
+    },
+    ask: (detail) => async (options) => {
+      await postJson(`/api/orders/${order.id}/ask`, { ...at(detail), options });
+      onChanged();
+    },
+  };
+}
 
 /** The order card, as a sheet over the conversation: what's sold, the total, payment, and the timeline. */
 export function OrderSheet({ order, onClose, onChanged }: Props) {
-  const save: Save = (detail) => async (value) => {
-    await patchJson(`/api/orders/${order.id}/details`, { itemId: detail.itemId, field: detail.field, value });
-    onChanged();
-  };
+  const { save, ask } = detailActions(order, onChanged);
+  return (
+    <SheetFrame onClose={onClose}>
+      <SheetHeader order={order} onClose={onClose} />
+      {order.items.map((item, index) => (
+        <ItemSection
+          key={item.id}
+          item={item}
+          index={index}
+          editable={order.editable}
+          save={save}
+          ask={ask}
+        />
+      ))}
+      <AddItemButton order={order} onChanged={onChanged} />
+      <DetailRow detail={order.deliveryFee} editable={order.editable} onSave={save(order.deliveryFee)} />
+      <TotalAndRequest order={order} onChanged={onChanged} />
+      <OrderActions order={order} onChanged={onChanged} />
+      {order.payment && <PaymentSection order={order} payment={order.payment} />}
+      <OrderTimeline order={order} />
+    </SheetFrame>
+  );
+}
+
+/** The dimmed backdrop and the card that slides up from the bottom. Tapping the backdrop closes it. */
+function SheetFrame({ onClose, children }: { onClose: () => void; children: ReactNode }) {
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-ink/30">
-      <div className="mt-auto flex max-h-[90%] flex-col overflow-y-auto rounded-t-[20px] bg-card pb-4">
-        <SheetHeader order={order} onClose={onClose} />
-        {order.items.map((item, index) => (
-          <ItemSection key={item.id} item={item} index={index} editable={order.editable} save={save} />
-        ))}
-        <AddItemButton order={order} onChanged={onChanged} />
-        <DetailRow detail={order.deliveryFee} editable={order.editable} onSave={save(order.deliveryFee)} />
-        <TotalAndRequest order={order} onChanged={onChanged} />
-        <OrderActions order={order} onChanged={onChanged} />
-        {order.payment && <PaymentSection order={order} payment={order.payment} />}
-        <OrderTimeline order={order} />
+      <button
+        type="button"
+        aria-label="Close the order card"
+        onClick={onClose}
+        className="absolute inset-0"
+      />
+      <div className="relative mt-auto flex max-h-[90%] flex-col overflow-y-auto rounded-t-[20px] bg-card pb-4">
+        {children}
       </div>
     </div>
   );
@@ -60,9 +96,10 @@ interface ItemProps {
   index: number;
   editable: boolean;
   save: Save;
+  ask: Ask;
 }
 
-function ItemSection({ item, index, editable, save }: ItemProps) {
+function ItemSection({ item, index, editable, save, ask }: ItemProps) {
   return (
     <section className="border-b border-line">
       <p className="flex justify-between px-3 pt-2 text-[13px] font-semibold text-muted">
@@ -70,7 +107,13 @@ function ItemSection({ item, index, editable, save }: ItemProps) {
         <span>{item.lineTotal}</span>
       </p>
       {item.details.map((detail) => (
-        <DetailRow key={detail.field} detail={detail} editable={editable} onSave={save(detail)} />
+        <DetailRow
+          key={detail.field}
+          detail={detail}
+          editable={editable}
+          onSave={save(detail)}
+          onAsk={ask(detail)}
+        />
       ))}
     </section>
   );
@@ -105,24 +148,17 @@ function TotalAndRequest({ order, onChanged }: Pick<Props, "order" | "onChanged"
 
 /** Enabled only when nothing is missing; otherwise it says what's left to settle. */
 function RequestPaymentButton({ order, onChanged }: Pick<Props, "order" | "onChanged">) {
-  const [error, setError] = useState<string | null>(null);
-  const request = async () => {
-    try {
-      await postJson(`/api/orders/${order.id}/request-payment`, {});
-      onChanged();
-    } catch (failure) {
-      setError(errorText(failure));
-    }
-  };
+  // Takes a moment: the AI writes the payment message's opening line first.
+  const { busy, error, run } = useAction(`/api/orders/${order.id}/request-payment`, onChanged);
   return (
     <>
       <button
         type="button"
-        disabled={order.paymentBlocker !== null}
-        onClick={() => void request()}
+        disabled={order.paymentBlocker !== null || busy}
+        onClick={run}
         className="rounded-full bg-ink px-4 py-2 font-medium text-white disabled:opacity-40"
       >
-        Request payment
+        {busy ? "Preparing the payment message…" : "Request payment"}
       </button>
       {order.paymentBlocker && <p className="text-[13px] text-muted">{order.paymentBlocker}</p>}
       {error && <p className="text-[13px] text-missing-fg">{error}</p>}

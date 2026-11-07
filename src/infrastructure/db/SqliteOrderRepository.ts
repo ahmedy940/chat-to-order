@@ -52,6 +52,12 @@ export class SqliteOrderRepository implements OrderRepository {
     return this.load(this.db.prepare<[string], OrderRow>(sql).get(conversationId));
   }
 
+  listForConversation(conversationId: string): Order[] {
+    const sql = "SELECT * FROM orders WHERE conversation_id = ? ORDER BY created_at, rowid";
+    const rows = this.db.prepare<[string], OrderRow>(sql).all(conversationId);
+    return rows.flatMap((row) => this.load(row) ?? []);
+  }
+
   save(order: Order): void {
     this.db.transaction(() => this.write(order))();
   }

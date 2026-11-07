@@ -10,21 +10,46 @@ interface Props {
   /** Whose phone this is: their own bubbles sit on the right. */
   mine: MessageDirection;
   empty: string;
+  /** The customer phone: tapping an offered option sends it as the reply. */
+  onOption?: (option: string) => void;
 }
 
 /** The chat bubbles. Customer bubbles are white with a border; the shop's are dark with white text. */
-export function MessageList({ messages, mine, empty }: Props) {
+export function MessageList({ messages, mine, empty, onOption }: Props) {
   const list = useRef<HTMLDivElement>(null);
   // Keep the newest message in view. Scrolls only this list, never the whole page.
   useEffect(() => {
     if (list.current) list.current.scrollTop = list.current.scrollHeight;
   }, [messages.length]);
+  const last = messages.at(-1);
+  // Options are tappable only while the shop's question is the latest message.
+  const tappable =
+    onOption && last?.direction === MessageDirection.Out && last.options.length > 0 ? last : null;
 
   return (
     <div ref={list} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto bg-page px-3 py-4">
       {messages.length === 0 && <p className="m-auto max-w-[260px] text-center text-muted">{empty}</p>}
       {messages.map((message) => (
         <Bubble key={message.id} message={message} isMine={message.direction === mine} />
+      ))}
+      {tappable && onOption && <OptionButtons options={tappable.options} onOption={onOption} />}
+    </div>
+  );
+}
+
+/** The options the shop offered, as buttons under its question. */
+function OptionButtons({ options, onOption }: { options: string[]; onOption: (option: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2 self-start">
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          onClick={() => onOption(option)}
+          className="rounded-full border border-ink bg-card px-4 py-1.5 text-[14px] font-medium hover:bg-page"
+        >
+          {option}
+        </button>
       ))}
     </div>
   );

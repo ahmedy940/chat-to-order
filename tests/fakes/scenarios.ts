@@ -29,7 +29,7 @@ export function filledOrder(w: World) {
 /** Requested, PayPal order prepared and captured. */
 export async function paidOrder(w: World) {
   const ids = filledOrder(w);
-  const { payToken } = w.requestPayment.execute(ids.orderId);
+  const { payToken } = await w.requestPayment.execute(ids.orderId);
   const { paypalOrderId } = await w.preparePayPal.execute(payToken);
   const result = await w.capture.execute(payToken, paypalOrderId);
   return { ...ids, payToken, paypalOrderId, result };
