@@ -1,31 +1,72 @@
+import { CapturePayment } from "@/application/CapturePayment";
+import { PreparePayPalOrder } from "@/application/PreparePayPalOrder";
 import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
 import { GetInbox } from "@/application/queries/GetInbox";
+import { GetPayPage } from "@/application/queries/GetPayPage";
 import { ReceiveCustomerMessage } from "@/application/ReceiveCustomerMessage";
+import { RequestPayment } from "@/application/RequestPayment";
 import { SendReply } from "@/application/SendReply";
+import { AddItem, SettleDetail } from "@/application/SettleDetail";
+import { StartOrder } from "@/application/StartOrder";
 import { DemoChannel } from "@/infrastructure/channels/DemoChannel";
 import { openDatabase, type Db } from "@/infrastructure/db/database";
 import { SqliteConversationRepository } from "@/infrastructure/db/SqliteConversationRepository";
+import { SqliteDraftRepository } from "@/infrastructure/db/SqliteDraftRepository";
 import { SqliteMessageRepository } from "@/infrastructure/db/SqliteMessageRepository";
+import { SqliteOrderEventRepository } from "@/infrastructure/db/SqliteOrderEventRepository";
+import { SqliteOrderRepository } from "@/infrastructure/db/SqliteOrderRepository";
 import { SqliteUnitOfWork } from "@/infrastructure/db/SqliteUnitOfWork";
-import { RandomIds, SystemClock } from "@/infrastructure/system";
+import { PAYPAL_SANDBOX_URL, PayPalRestGateway } from "@/infrastructure/payments/PayPalRestGateway";
+import { RandomIds, RandomTokens, SystemClock } from "@/infrastructure/system";
+
+/** Where the app runs, for pay links: http://localhost:3000 locally, the Render URL when hosted. */
+function appBaseUrl(): string {
+  return (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+}
+
+/** The real adapters. Secrets come from the environment and are never sent to the browser. */
+function adapters(db: Db) {
+  const messages = new SqliteMessageRepository(db);
+  const gateway = new PayPalRestGateway({
+    clientId: process.env.PAYPAL_CLIENT_ID ?? "",
+    clientSecret: process.env.PAYPAL_CLIENT_SECRET ?? "",
+    baseUrl: PAYPAL_SANDBOX_URL,
+  });
+  return {
+    conversations: new SqliteConversationRepository(db),
+    messages,
+    orders: new SqliteOrderRepository(db),
+    events: new SqliteOrderEventRepository(db),
+    drafts: new SqliteDraftRepository(db),
+    uow: new SqliteUnitOfWork(db),
+    clock: new SystemClock(),
+    ids: new RandomIds(),
+    tokens: new RandomTokens(),
+    channel: new DemoChannel(messages),
+    gateway,
+    payUrl: (payToken: string) => `${appBaseUrl()}/pay/${payToken}`,
+  };
+}
 
 /**
  * The one place that picks the real adapters and hands them to the use cases. Routes and pages ask this
  * container for a use case; nothing else creates adapters.
  */
 function build(db: Db) {
-  const conversations = new SqliteConversationRepository(db);
-  const messages = new SqliteMessageRepository(db);
-  const uow = new SqliteUnitOfWork(db);
-  const clock = new SystemClock();
-  const ids = new RandomIds();
-  const channel = new DemoChannel(messages);
+  const a = adapters(db);
   return {
-    receiveCustomerMessage: new ReceiveCustomerMessage({ conversations, messages, uow, clock, ids }),
-    sendReply: new SendReply({ conversations, messages, channel, uow, clock, ids }),
-    getInbox: new GetInbox({ conversations, messages }),
-    getSellerConversation: new GetSellerConversation({ conversations, messages }),
-    getCustomerConversation: new GetCustomerConversation({ conversations, messages }),
+    receiveCustomerMessage: new ReceiveCustomerMessage(a),
+    sendReply: new SendReply(a),
+    startOrder: new StartOrder(a),
+    addItem: new AddItem(a),
+    settleDetail: new SettleDetail(a),
+    requestPayment: new RequestPayment(a),
+    preparePayPalOrder: new PreparePayPalOrder(a),
+    capturePayment: new CapturePayment(a),
+    getInbox: new GetInbox(a),
+    getSellerConversation: new GetSellerConversation(a),
+    getCustomerConversation: new GetCustomerConversation(a),
+    getPayPage: new GetPayPage(a),
   };
 }
 

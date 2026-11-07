@@ -35,10 +35,29 @@ function Bubble({ message, isMine }: { message: MessageView; isMine: boolean }) 
   const colours = fromShop ? "bg-ink text-white" : "border border-line bg-card text-ink";
   return (
     <div className={`flex max-w-[78%] flex-col ${isMine ? "items-end self-end" : "items-start self-start"}`}>
-      <p className={`rounded-bubble px-3 py-2 break-words whitespace-pre-wrap ${colours}`}>{message.text}</p>
+      {/* wrap-anywhere: long links break inside the bubble instead of pushing it past the phone's edge */}
+      <p className={`max-w-full rounded-bubble px-3 py-2 whitespace-pre-wrap wrap-anywhere ${colours}`}>
+        {message.text}
+      </p>
+      {message.payLink && <PayLinkCard url={message.payLink.url} label={message.payLink.label} />}
       <time dateTime={message.at} className="mt-0.5 px-1 text-[11px] text-muted">
         {formatTime(message.at)}
       </time>
     </div>
+  );
+}
+
+/** A payment message's link card: "Order #1001 · $128.00 · Pay with PayPal". Opens the pay page in a new tab. */
+function PayLinkCard({ url, label }: { url: string; label: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-1 flex w-60 max-w-full flex-col rounded-card border border-line bg-card px-3 py-2 text-ink hover:bg-page"
+    >
+      <span className="text-[13px] text-muted">{label}</span>
+      <span className="font-semibold">Pay with PayPal ›</span>
+    </a>
   );
 }

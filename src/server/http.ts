@@ -1,10 +1,16 @@
 import { connection } from "next/server";
 import { z } from "zod";
+import { PaymentGatewayError } from "@/application/ports/PaymentGateway";
 import { DomainError } from "@/domain/errors";
 
 /** The `{ params }` every `[id]` route receives. */
 export interface IdParams {
   params: Promise<{ id: string }>;
+}
+
+/** The `{ params }` every `/pay/[token]` route receives. */
+export interface TokenParams {
+  params: Promise<{ token: string }>;
 }
 
 /** The ID a phone gives each message it sends, so a retry or double tap is saved once. */
@@ -47,6 +53,11 @@ function errorResponse(error: unknown): Response {
   if (error instanceof DomainError) {
     const status = STATUS_BY_CODE[error.code] ?? 422;
     return Response.json({ error: error.message, code: error.code }, { status });
+  }
+  if (error instanceof PaymentGatewayError) {
+    // PayPal refused (for example INSTRUMENT_DECLINED) or couldn't be reached. Nothing changed on the order.
+    const status = error.retryable ? 503 : 422;
+    return Response.json({ error: error.message, code: error.issue }, { status });
   }
   console.error(error);
   return Response.json({ error: "Something went wrong. Try again." }, { status: 500 });

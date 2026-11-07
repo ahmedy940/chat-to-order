@@ -1,5 +1,5 @@
 -- chat-to-order data model (spec.md > Data Model). Money is in integer cents (USD). Times are ISO-8601 UTC text.
--- Step 2 uses conversations and messages; the order tables fill in from step 3.
+-- Bump SCHEMA_VERSION in database.ts whenever this file changes.
 
 CREATE TABLE conversations (
   id TEXT PRIMARY KEY,
@@ -18,9 +18,21 @@ CREATE TABLE messages (
   kind TEXT NOT NULL,
   text TEXT NOT NULL,
   options_json TEXT NOT NULL DEFAULT '[]',
+  pay_token TEXT, -- set on a payment message, shown to the customer as a pay-link card
   created_at TEXT NOT NULL
 );
 CREATE INDEX messages_by_conversation ON messages(conversation_id, created_at);
+
+-- The one prepared message waiting in each conversation's reply box.
+CREATE TABLE drafts (
+  conversation_id TEXT PRIMARY KEY REFERENCES conversations(id),
+  id TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL,
+  text TEXT NOT NULL,
+  options_json TEXT NOT NULL DEFAULT '[]',
+  order_id TEXT,
+  pay_token TEXT
+);
 
 CREATE TABLE orders (
   id TEXT PRIMARY KEY,
@@ -30,11 +42,9 @@ CREATE TABLE orders (
   delivery_fee_cents INTEGER,
   frozen_total_cents INTEGER,
   pay_token TEXT UNIQUE,
+  amount_mismatch INTEGER NOT NULL DEFAULT 0,
   first_message_id TEXT,
   last_read_message_id TEXT,
-  draft_id TEXT,
-  draft_text TEXT,
-  draft_options_json TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -69,9 +79,7 @@ CREATE TABLE payments (
   payer_email TEXT,
   ship_name TEXT,
   ship_address_json TEXT,
-  captured_cents INTEGER,
-  captured_at TEXT,
-  refunded_at TEXT
+  captured_cents INTEGER
 );
 
 CREATE TABLE proposals (

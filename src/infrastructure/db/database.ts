@@ -9,7 +9,7 @@ export const DEFAULT_DATABASE_PATH = path.join(process.cwd(), "data", "chat-to-o
 const SCHEMA_PATH = path.join(process.cwd(), "src", "infrastructure", "db", "schema.sql");
 
 /** Bump when schema.sql changes: an older database file is then rebuilt from scratch (demo data only). */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 /** Children before parents, so clearing never trips a foreign key. */
 const TABLES_CHILD_FIRST = [
@@ -19,6 +19,7 @@ const TABLES_CHILD_FIRST = [
   "order_details",
   "order_items",
   "orders",
+  "drafts",
   "messages",
   "conversations",
   "sequences",

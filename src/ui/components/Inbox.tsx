@@ -4,6 +4,7 @@ import type { InboxRow } from "@/application/queries/views";
 import { MessageDirection } from "@/domain/types";
 import { formatTime } from "../api";
 import { usePolling } from "../hooks/usePolling";
+import { StatusBadge } from "./order/StatusBadge";
 
 /** The seller's list of customers, most recent first. */
 export function Inbox({ onOpen }: { onOpen: (conversationId: string) => void }) {
@@ -44,9 +45,7 @@ function InboxRowButton({ row, onOpen }: { row: InboxRow; onOpen: (id: string) =
       </span>
       <span className="flex items-center justify-between gap-2">
         <span className="truncate text-[14px] text-muted">{preview}</span>
-        <span className="shrink-0 rounded-full bg-set-bg px-2 py-0.5 text-[13px] text-set-fg">
-          {row.status}
-        </span>
+        <StatusBadge label={row.status} />
       </span>
     </button>
   );

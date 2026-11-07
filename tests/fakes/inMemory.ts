@@ -3,10 +3,6 @@ import type { ConversationRepository } from "@/application/ports/ConversationRep
 import type { MessageChannel } from "@/application/ports/MessageChannel";
 import type { MessageRepository } from "@/application/ports/MessageRepository";
 import type { UnitOfWork } from "@/application/ports/UnitOfWork";
-import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
-import { GetInbox } from "@/application/queries/GetInbox";
-import { ReceiveCustomerMessage } from "@/application/ReceiveCustomerMessage";
-import { SendReply } from "@/application/SendReply";
 import { Conversation, type ConversationSnapshot } from "@/domain/Conversation";
 import { Message, type MessageSnapshot } from "@/domain/Message";
 
@@ -99,30 +95,11 @@ export class SequentialIds implements IdGenerator {
   }
 }
 
-class SavingChannel implements MessageChannel {
+/** The demo channel's behaviour: sending saves the message where the customer phone reads it. */
+export class SavingChannel implements MessageChannel {
   constructor(private readonly messages: MessageRepository) {}
 
   send(message: Message): void {
     this.messages.add(message);
   }
-}
-
-/** The chat use cases wired to in-memory fakes, the same way the container wires the real adapters. */
-export function chatWorld() {
-  const conversations = new InMemoryConversations();
-  const messages = new InMemoryMessages();
-  const uow = new ImmediateUnitOfWork();
-  const clock = new FixedClock();
-  const ids = new SequentialIds();
-  const channel = new SavingChannel(messages);
-  const repos = { conversations, messages };
-  return {
-    ...repos,
-    clock,
-    receive: new ReceiveCustomerMessage({ ...repos, uow, clock, ids }),
-    reply: new SendReply({ ...repos, channel, uow, clock, ids }),
-    inbox: new GetInbox(repos),
-    sellerView: new GetSellerConversation(repos),
-    customerView: new GetCustomerConversation(repos),
-  };
 }

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@google/genai": "3.0.0",
+    "@paypal/react-paypal-js": "10.6.1",
     "better-sqlite3": "13.0.3",
     "next": "16.4.5",
     "react": "19.3.1",

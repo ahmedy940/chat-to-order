@@ -10,6 +10,8 @@ export interface MessageSnapshot {
   kind: MessageKind;
   text: string;
   options: readonly string[];
+  /** Set on a payment message: the customer phone shows it as a "Pay with PayPal" card. */
+  payToken: string | null;
   createdAt: Date;
 }
 
@@ -29,23 +31,25 @@ export class Message {
     return Message.create(input, MessageDirection.In);
   }
 
-  static fromShop(input: NewMessage): Message {
-    return Message.create(input, MessageDirection.Out);
+  /** A message from the shop. With a pay token it's the payment message, shown as a pay-link card. */
+  static fromShop(input: NewMessage, payToken: string | null = null): Message {
+    return Message.create(input, MessageDirection.Out, payToken);
   }
 
   static restore(snapshot: MessageSnapshot): Message {
     return new Message({ ...snapshot, options: [...snapshot.options] });
   }
 
-  private static create(input: NewMessage, direction: MessageDirection): Message {
+  private static create(input: NewMessage, direction: MessageDirection, payToken: string | null = null) {
     return new Message({
       id: input.id,
       conversationId: input.conversationId,
       clientId: input.clientId,
       direction,
-      kind: MessageKind.Text,
+      kind: payToken ? MessageKind.PayLink : MessageKind.Text,
       text: cleanText(input.text),
       options: [],
+      payToken,
       createdAt: input.at,
     });
   }

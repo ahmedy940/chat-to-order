@@ -19,6 +19,15 @@ export type MessageDirection = ValueOf<typeof MessageDirection>;
 export const MessageKind = { Text: "text", OptionReply: "option_reply", PayLink: "pay_link" } as const;
 export type MessageKind = ValueOf<typeof MessageKind>;
 
+/** What the prepared message in the seller's reply box is for. */
+export const DraftKind = {
+  Question: "question",
+  Payment: "payment",
+  Thanks: "thanks",
+  Refund: "refund",
+} as const;
+export type DraftKind = ValueOf<typeof DraftKind>;
+
 export const OrderStatus = {
   Draft: "Draft",
   WaitingForCustomer: "WaitingForCustomer",
@@ -28,6 +37,16 @@ export const OrderStatus = {
   Cancelled: "Cancelled",
 } as const;
 export type OrderStatus = ValueOf<typeof OrderStatus>;
+
+/** How each status reads on screen. */
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  Draft: "Draft",
+  WaitingForCustomer: "Waiting for customer",
+  AwaitingPayment: "Awaiting payment",
+  Paid: "Paid",
+  Refunded: "Refunded",
+  Cancelled: "Cancelled",
+};
 
 export const DetailStatus = { Found: "found", Missing: "missing", SetByYou: "set_by_you" } as const;
 export type DetailStatus = ValueOf<typeof DetailStatus>;
@@ -84,6 +103,15 @@ export const Actor = {
   PayPal: "paypal",
 } as const;
 export type Actor = ValueOf<typeof Actor>;
+
+/** Who did it, as the order timeline says it. */
+export const ACTOR_LABELS: Record<Actor, string> = {
+  customer: "Customer",
+  ai: "AI",
+  agent: "Agent",
+  seller: "You",
+  paypal: "PayPal",
+};
 
 export const EventType = {
   OrderRead: "OrderRead",

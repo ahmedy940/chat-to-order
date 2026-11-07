@@ -72,3 +72,22 @@ export class ConversationNotFound extends DomainError {
     super("NOT_FOUND", "That conversation doesn't exist any more. The demo may have been reset.");
   }
 }
+
+export class OrderNotFound extends DomainError {
+  constructor() {
+    super("NOT_FOUND", "That order doesn't exist any more. The demo may have been reset.");
+  }
+}
+
+export class PayLinkNotFound extends DomainError {
+  constructor() {
+    super("NOT_FOUND", "This pay link isn't valid. Ask the shop for a new one.");
+  }
+}
+
+/** The pay page can't take money for this order (already paid, cancelled, or a different PayPal order). */
+export class PaymentNotOpen extends DomainError {
+  constructor(reason: string) {
+    super("PAYMENT_NOT_OPEN", reason);
+  }
+}

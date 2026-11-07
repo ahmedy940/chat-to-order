@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Conversation } from "@/domain/Conversation";
 import { ConversationNotFound, InvalidMessage } from "@/domain/errors";
-import { chatWorld } from "../fakes/inMemory";
+import { chatWorld } from "../fakes/world";
 
 const say = (text: string, clientId: string, conversationId: string | null = null) => ({
   conversationId,

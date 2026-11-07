@@ -157,7 +157,8 @@ export class Order {
     this.assertEditable();
     const detail = this.detailAt(ref);
     detail.setBySeller(value);
-    return newEvent(EventType.DetailSet, Actor.Seller, `${detail.label} set to ${detail.value}`);
+    const shown = detail.money?.format() ?? detail.value;
+    return newEvent(EventType.DetailSet, Actor.Seller, `${detail.label} set to ${shown}`);
   }
 
   askCustomer(ref: DetailRef, options: readonly string[]): void {

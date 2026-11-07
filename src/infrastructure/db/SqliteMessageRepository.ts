@@ -11,6 +11,7 @@ interface Row {
   kind: string;
   text: string;
   options_json: string;
+  pay_token: string | null;
   created_at: string;
 }
 
@@ -26,8 +27,8 @@ export class SqliteMessageRepository implements MessageRepository {
     const s = message.snapshot();
     this.db
       .prepare(
-        `INSERT INTO messages (id, conversation_id, client_id, direction, kind, text, options_json, created_at)
-         VALUES (@id, @conversationId, @clientId, @direction, @kind, @text, @options, @createdAt)`,
+        `INSERT INTO messages (id, conversation_id, client_id, direction, kind, text, options_json, pay_token, created_at)
+         VALUES (@id, @conversationId, @clientId, @direction, @kind, @text, @options, @payToken, @createdAt)`,
       )
       .run({ ...s, options: JSON.stringify(s.options), createdAt: s.createdAt.toISOString() });
   }
@@ -60,6 +61,7 @@ function toMessage(row: Row): Message {
     kind: row.kind as MessageKind,
     text: row.text,
     options: JSON.parse(row.options_json) as string[],
+    payToken: row.pay_token,
     createdAt: new Date(row.created_at),
   });
 }

@@ -42,19 +42,32 @@ export class OrderItem {
     return this.allDetails().filter((detail) => detail.isOpen);
   }
 
+  /** 0 while still missing. */
+  quantity(): number {
+    return Number(this.details.get(ItemField.Quantity)?.value ?? 0);
+  }
+
+  /** $0 while still missing. */
+  unitPrice(): Money {
+    return this.details.get(ItemField.UnitPrice)?.money ?? Money.zero();
+  }
+
   /** Quantity × unit price. Zero while either is still missing. */
   lineTotal(): Money {
-    const quantity = Number(this.details.get(ItemField.Quantity)?.value ?? 0);
-    const price = this.details.get(ItemField.UnitPrice)?.money ?? Money.zero();
-    return price.times(quantity);
+    return this.unitPrice().times(this.quantity());
+  }
+
+  /** "Beige linen dress (M)": the product with its colour and size, as PayPal and the pay page show it. */
+  name(): string {
+    const value = (field: ItemField) => this.details.get(field)?.value ?? null;
+    const extras = [value(ItemField.Variant), value(ItemField.Size)].filter((v) => v !== null);
+    const product = value(ItemField.Product) ?? "Item";
+    return extras.length > 0 ? `${product} (${extras.join(", ")})` : product;
   }
 
   /** "2 × Beige linen dress (M)" */
   summary(): string {
-    const value = (field: ItemField) => this.details.get(field)?.value ?? null;
-    const extras = [value(ItemField.Variant), value(ItemField.Size)].filter((v) => v !== null);
-    const name = value(ItemField.Product) ?? "Item";
-    return `${value(ItemField.Quantity) ?? "?"} × ${name}${extras.length > 0 ? ` (${extras.join(", ")})` : ""}`;
+    return `${this.details.get(ItemField.Quantity)?.value ?? "?"} × ${this.name()}`;
   }
 
   /** Merges an AI reading into this item. Returns true when any detail changed. */

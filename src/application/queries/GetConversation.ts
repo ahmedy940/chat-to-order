@@ -1,29 +1,56 @@
-import { ConversationNotFound } from "@/domain/errors";
 import type { Conversation } from "@/domain/Conversation";
+import { ConversationNotFound } from "@/domain/errors";
 import type { ConversationRepository } from "../ports/ConversationRepository";
+import type { DraftRepository } from "../ports/DraftRepository";
 import type { MessageRepository } from "../ports/MessageRepository";
-import { toMessageView, type CustomerConversationView, type SellerConversationView } from "./views";
+import type { OrderEventRepository } from "../ports/OrderEventRepository";
+import type { OrderRepository } from "../ports/OrderRepository";
+import type { PayUrl } from "../ports/TokenFactory";
+import { toDraftView, toOrderView } from "./orderViews";
+import {
+  toMessageViews,
+  type CustomerConversationView,
+  type MessageView,
+  type SellerConversationView,
+} from "./views";
 
 interface Deps {
   conversations: ConversationRepository;
   messages: MessageRepository;
+  orders: OrderRepository;
+  events: OrderEventRepository;
+  drafts: DraftRepository;
+  payUrl: PayUrl;
 }
 
 abstract class ConversationQuery {
   constructor(protected readonly deps: Deps) {}
 
-  protected load(id: string): { conversation: Conversation; messages: ReturnType<typeof toMessageView>[] } {
+  protected load(id: string): { conversation: Conversation; messages: MessageView[] } {
     const conversation = this.deps.conversations.get(id);
     if (!conversation) throw new ConversationNotFound();
-    return { conversation, messages: this.deps.messages.listByConversation(id).map(toMessageView) };
+    const messages = toMessageViews(
+      this.deps.messages.listByConversation(id),
+      this.deps.orders,
+      this.deps.payUrl,
+    );
+    return { conversation, messages };
   }
 }
 
-/** The seller's view of one conversation. Later steps add the order, draft, proposal and timeline. */
+/** The seller's view of one conversation: the chat, the current order card with its timeline, and the draft. */
 export class GetSellerConversation extends ConversationQuery {
   execute(id: string): SellerConversationView {
     const { conversation, messages } = this.load(id);
-    return { conversationId: conversation.id, customerName: conversation.customerName, messages };
+    const order = this.deps.orders.latestForConversation(id);
+    const events = order ? this.deps.events.listByOrder(order.id) : [];
+    return {
+      conversationId: conversation.id,
+      customerName: conversation.customerName,
+      messages,
+      order: order ? toOrderView(order, events, this.deps.payUrl) : null,
+      draft: toDraftView(this.deps.drafts.get(id)),
+    };
   }
 }
 
