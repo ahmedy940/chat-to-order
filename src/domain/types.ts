@@ -1,0 +1,113 @@
+/** Typed constants for every status, owner, actor and field name, so no magic strings leak into the code. */
+
+type ValueOf<T> = T[keyof T];
+
+export const SHOP_NAME = "Linen and Co.";
+export const CURRENCY = "USD";
+export const MAX_OPTIONS = 3;
+export const FIRST_ORDER_NUMBER = 1001;
+
+export const OrderStatus = {
+  Draft: "Draft",
+  WaitingForCustomer: "WaitingForCustomer",
+  AwaitingPayment: "AwaitingPayment",
+  Paid: "Paid",
+  Refunded: "Refunded",
+  Cancelled: "Cancelled",
+} as const;
+export type OrderStatus = ValueOf<typeof OrderStatus>;
+
+export const DetailStatus = { Found: "found", Missing: "missing", SetByYou: "set_by_you" } as const;
+export type DetailStatus = ValueOf<typeof DetailStatus>;
+
+export const ItemField = {
+  Product: "product",
+  Variant: "variant",
+  Size: "size",
+  Quantity: "quantity",
+  UnitPrice: "unit_price",
+} as const;
+export type ItemField = ValueOf<typeof ItemField>;
+
+export const OrderField = { DeliveryFee: "delivery_fee" } as const;
+export type OrderField = ValueOf<typeof OrderField>;
+
+export type DetailField = ItemField | OrderField;
+
+/** Display order of an item's details on the card. */
+export const ITEM_FIELD_ORDER: readonly ItemField[] = [
+  ItemField.Product,
+  ItemField.Variant,
+  ItemField.Size,
+  ItemField.Quantity,
+  ItemField.UnitPrice,
+];
+
+/** Every item needs these before payment can be requested. Size and variant only when they apply. */
+export const REQUIRED_ITEM_FIELDS: readonly ItemField[] = [
+  ItemField.Product,
+  ItemField.Quantity,
+  ItemField.UnitPrice,
+];
+
+/** Prices are typed by the seller only: never asked of the customer, never invented by the AI. */
+export const SELLER_ONLY_FIELDS: readonly DetailField[] = [ItemField.UnitPrice, OrderField.DeliveryFee];
+
+export const MONEY_FIELDS: readonly DetailField[] = [ItemField.UnitPrice, OrderField.DeliveryFee];
+
+export const FIELD_LABELS: Record<DetailField, string> = {
+  product: "Product",
+  variant: "Colour or style",
+  size: "Size",
+  quantity: "Quantity",
+  unit_price: "Price",
+  delivery_fee: "Delivery fee",
+};
+
+export const Actor = {
+  Customer: "customer",
+  Ai: "ai",
+  Agent: "agent",
+  Seller: "seller",
+  PayPal: "paypal",
+} as const;
+export type Actor = ValueOf<typeof Actor>;
+
+export const EventType = {
+  OrderRead: "OrderRead",
+  DetailSet: "DetailSet",
+  QuestionSent: "QuestionSent",
+  PaymentRequested: "PaymentRequested",
+  PaymentCaptured: "PaymentCaptured",
+  PaymentMismatch: "PaymentMismatch",
+  RefundProposed: "RefundProposed",
+  ProposalApproved: "ProposalApproved",
+  ProposalDismissed: "ProposalDismissed",
+  RefundIssued: "RefundIssued",
+  RefundFailed: "RefundFailed",
+  OrderCancelled: "OrderCancelled",
+} as const;
+export type EventType = ValueOf<typeof EventType>;
+
+export const ProposalKind = {
+  Ask: "ask",
+  RequestPayment: "request_payment",
+  Remind: "remind",
+  Refund: "refund",
+} as const;
+export type ProposalKind = ValueOf<typeof ProposalKind>;
+
+export const Intent = {
+  OrderDetails: "order_details",
+  ReadyToPay: "ready_to_pay",
+  PaymentQuestion: "payment_question",
+  RefundRequest: "refund_request",
+  Other: "other",
+} as const;
+export type Intent = ValueOf<typeof Intent>;
+
+/** Points at one detail: an item's field, or an order-level field when itemId is null. */
+export interface DetailRef {
+  itemId: string | null;
+  field: DetailField;
+}

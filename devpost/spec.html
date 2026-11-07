@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat to Paid spec</title>
+<style>
+:root{
+  --bg:#f6f5f1;--surface:#ffffff;--surface2:#efede7;--text:#1f1e1b;--muted:#68665f;--border:#e0ddd4;
+  --accent:#3550c4;--accent-bg:#e8ecfb;
+  --cust:#1d7a55;--cust-bg:#e2f3ea;--seller:#5146b0;--seller-bg:#ecebfc;--pp:#0b5fa5;--pp-bg:#e0eefa;
+  --ok:#2f6b12;--ok-bg:#e8f3dc;--warn:#8a5a00;--warn-bg:#fbefd6;--danger:#a32d2d;--danger-bg:#fbe9e9;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161614;--surface:#1f1f1c;--surface2:#2a2a26;--text:#ecebe6;--muted:#a3a19a;--border:#3a3934;
+  --accent:#9db0ff;--accent-bg:#232b4d;
+  --cust:#7fd6ad;--cust-bg:#173a2b;--seller:#b9b2ff;--seller-bg:#2a2650;--pp:#8cc4f2;--pp-bg:#15304a;
+  --ok:#a9d987;--ok-bg:#24361a;--warn:#f0c46c;--warn-bg:#3a2d10;--danger:#f2a3a3;--danger-bg:#3d1c1c;}}
+:root[data-theme="dark"]{
+  --bg:#161614;--surface:#1f1f1c;--surface2:#2a2a26;--text:#ecebe6;--muted:#a3a19a;--border:#3a3934;
+  --accent:#9db0ff;--accent-bg:#232b4d;
+  --cust:#7fd6ad;--cust-bg:#173a2b;--seller:#b9b2ff;--seller-bg:#2a2650;--pp:#8cc4f2;--pp-bg:#15304a;
+  --ok:#a9d987;--ok-bg:#24361a;--warn:#f0c46c;--warn-bg:#3a2d10;--danger:#f2a3a3;--danger-bg:#3d1c1c;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:920px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:30px;font-weight:600;margin:6px 0 4px;letter-spacing:-.01em}
+h2{font-size:20px;font-weight:600;margin:0 0 12px}
+h3{font-size:16px;font-weight:600;margin:0 0 6px}
+p{margin:0 0 10px}
+a{color:var(--accent)}
+.lead{font-size:18px;color:var(--muted);max-width:720px}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--warn-bg);color:var(--warn)}
+section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin:18px 0}
+.kernel{border:2px solid var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:12px}
+.card{background:var(--surface2);border-radius:10px;padding:14px 16px}
+.muted{color:var(--muted)}.small{font-size:14px}
+ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+th{font-weight:600;color:var(--muted);font-size:13px;border-top:none}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--muted)}
+.step{border-left:4px solid var(--border);border-radius:0 10px 10px 0}
+.s-c{border-left-color:var(--cust)}.s-s{border-left-color:var(--seller)}.s-p{border-left-color:var(--pp)}.s-a{border-left-color:var(--accent)}
+.who{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+.w-c{background:var(--cust-bg);color:var(--cust)}.w-s{background:var(--seller-bg);color:var(--seller)}.w-p{background:var(--pp-bg);color:var(--pp)}.w-a{background:var(--accent-bg);color:var(--accent)}
+details{border:1px solid var(--border);border-radius:10px;padding:0 16px;margin:10px 0;background:var(--surface)}
+summary{cursor:pointer;font-weight:600;padding:12px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted);font-weight:400;font-size:20px}
+details[open] summary::after{content:"−"}
+details[open]{padding-bottom:12px}
+.stepper{background:var(--surface2);border-radius:10px;padding:14px 16px}
+.ctl{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+button{font:inherit;font-size:14px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+.dots{display:flex;gap:6px;margin-top:10px}.dots span{width:8px;height:8px;border-radius:50%;background:var(--border)}.dots span.on{background:var(--accent)}
+.col-in{border-top:3px solid var(--ok)}.col-later{border-top:3px solid var(--warn)}.col-cut{border-top:3px solid var(--danger)}
+svg{width:100%;height:auto;display:block}
+svg text{font-family:inherit;fill:var(--text)}
+.t1{font-size:14px;font-weight:600}.t2{font-size:12px;fill:var(--muted)!important}
+.ln{stroke:var(--muted);stroke-width:1.3;fill:none}
+.phones{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.phone{width:min(300px,100%);border:2px solid var(--text);border-radius:28px;padding:14px 12px;background:var(--surface)}
+.phone .bar{font-size:12px;font-weight:600;text-align:center;color:var(--muted);margin-bottom:8px}
+.bub{max-width:82%;padding:7px 11px;border-radius:16px;font-size:13px;margin:5px 0;line-height:1.4}
+.bin{background:var(--surface);border:1px solid var(--border)}
+.bout{background:var(--text);color:var(--bg);margin-left:auto}
+.ob{font-size:12px;background:var(--surface2);border-radius:10px;padding:6px 10px;margin-bottom:8px;display:flex;justify-content:space-between;gap:6px}
+.prop{border:1.5px solid var(--accent);background:var(--accent-bg);border-radius:12px;padding:8px 10px;font-size:12px;margin:8px 0}
+.draft{border:1.5px dashed var(--accent);border-radius:12px;padding:8px 10px;font-size:12px}
+.chip{font-size:11px;font-weight:600;color:var(--accent)}
+.opt{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:2px 12px;font-size:12px;margin:2px 4px 0 0;background:var(--surface)}
+.ppbtn{background:#ffc439;color:#111;border-radius:999px;text-align:center;font-weight:700;padding:8px;font-size:13px;margin-top:8px}
+.row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-top:1px solid var(--border)}
+.pill{font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--ok-bg);color:var(--ok)}.p-ms{background:var(--danger-bg);color:var(--danger)}.p-wa{background:var(--warn-bg);color:var(--warn)}.p-gr{background:var(--surface2);color:var(--muted)}
+.tl{display:grid;gap:8px}
+.tl .card{display:flex;gap:12px;align-items:flex-start}
+.day{font-size:12px;font-weight:700;min-width:64px;color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<span class="tag">Approved · Sat 7 Nov 2026</span>
+<h1>Chat to Paid: technical spec</h1>
+<p class="lead">One Next.js app on Render's free tier. Gemini reads the chat and proposes; PayPal's REST APIs take and return the money; the seller approves every step.</p>
+<p class="small muted">Canonical file: <code>devpost/spec.md</code></p>
+
+<section class="kernel">
+<h2>How the pieces fit</h2>
+<svg viewBox="0 0 860 330" role="img" aria-label="Architecture layers">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+  <rect x="10" y="10" width="840" height="64" rx="12" fill="var(--cust-bg)" stroke="var(--cust)"/>
+  <text x="26" y="34" class="t1">Screens</text>
+  <text x="26" y="56" class="t2">Demo page (customer phone + seller phone) · Pay page /pay/[token] with PayPal buttons · polling every 1.5 s</text>
+  <rect x="10" y="92" width="840" height="50" rx="12" fill="var(--surface2)" stroke="var(--border)"/>
+  <text x="26" y="122" class="t1">Routes</text><text x="110" y="122" class="t2">thin: validate with Zod → call a use case → JSON</text>
+  <rect x="10" y="160" width="410" height="70" rx="12" fill="var(--seller-bg)" stroke="var(--seller)"/>
+  <text x="26" y="184" class="t1">Use cases</text>
+  <text x="26" y="206" class="t2">ReadOrder · SettleDetail · SendReply · ProposeNextAction</text>
+  <text x="26" y="222" class="t2">RequestPayment · PreparePayPalOrder · CapturePayment · RefundPayment</text>
+  <rect x="440" y="160" width="410" height="70" rx="12" fill="var(--accent-bg)" stroke="var(--accent)"/>
+  <text x="456" y="184" class="t1">Domain (pure rules)</text>
+  <text x="456" y="206" class="t2">Order (statuses, total, freeze, markPaid checks amount)</text>
+  <text x="456" y="222" class="t2">Payment · Money (cents) · NextActionPolicy</text>
+  <rect x="10" y="250" width="200" height="70" rx="12" fill="var(--surface2)" stroke="var(--border)"/><text x="26" y="276" class="t1">GeminiAiProvider</text><text x="26" y="298" class="t2">readOrder · classifyIntent</text>
+  <rect x="226" y="250" width="200" height="70" rx="12" fill="var(--pp-bg)" stroke="var(--pp)"/><text x="242" y="276" class="t1">PayPalRestGateway</text><text x="242" y="298" class="t2">create · capture · refund</text>
+  <rect x="442" y="250" width="200" height="70" rx="12" fill="var(--surface2)" stroke="var(--border)"/><text x="458" y="276" class="t1">SQLite repositories</text><text x="458" y="298" class="t2">one file on the server</text>
+  <rect x="658" y="250" width="192" height="70" rx="12" fill="var(--surface2)" stroke="var(--border)" stroke-dasharray="4 4"/><text x="674" y="276" class="t1">DemoChannel</text><text x="674" y="298" class="t2">WhatsApp adapter later</text>
+  <text x="640" y="150" class="t2">ports (interfaces) ↓ adapters</text>
+</svg>
+<p class="small muted">Dependencies point inward: routes → use cases → domain. Adapters plug into ports, wired in <code>src/server/container.ts</code>. Swapping Gemini for Claude or adding WhatsApp is one new adapter.</p>
+</section>
+
+<section>
+<h2>The payment round trip</h2>
+<svg viewBox="0 0 860 420" role="img" aria-label="Payment sequence">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+  <g class="t1">
+    <rect x="20" y="10" width="150" height="34" rx="8" fill="var(--seller-bg)" stroke="var(--seller)"/><text x="95" y="32" text-anchor="middle">Seller phone</text>
+    <rect x="240" y="10" width="150" height="34" rx="8" fill="var(--cust-bg)" stroke="var(--cust)"/><text x="315" y="32" text-anchor="middle">Pay page</text>
+    <rect x="460" y="10" width="150" height="34" rx="8" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="535" y="32" text-anchor="middle">Our server</text>
+    <rect x="680" y="10" width="150" height="34" rx="8" fill="var(--pp-bg)" stroke="var(--pp)"/><text x="755" y="32" text-anchor="middle">PayPal</text>
+  </g>
+  <g stroke="var(--border)" stroke-dasharray="3 4"><line x1="95" y1="44" x2="95" y2="410"/><line x1="315" y1="44" x2="315" y2="410"/><line x1="535" y1="44" x2="535" y2="410"/><line x1="755" y1="44" x2="755" y2="410"/></g>
+  <g class="t2">
+    <path class="ln" d="M95,72 L531,72" marker-end="url(#ar2)"/><text x="110" y="66">1 · Request payment → freeze order, make pay token</text>
+    <path class="ln" d="M315,112 L531,112" marker-end="url(#ar2)"/><text x="325" y="106">2 · PayPal button pressed</text>
+    <path class="ln" d="M535,142 L751,142" marker-end="url(#ar2)"/><text x="545" y="136">3 · create order (items, shipping, total)</text>
+    <path class="ln" d="M751,168 L319,168" marker-end="url(#ar2)"/><text x="545" y="186">PayPal order ID → buttons</text>
+    <path class="ln" d="M315,214 L751,214" marker-end="url(#ar2)"/><text x="325" y="208">4 · buyer logs in and approves (PayPal window)</text>
+    <path class="ln" d="M315,254 L531,254" marker-end="url(#ar2)"/><text x="325" y="248">5 · onApprove → capture</text>
+    <path class="ln" d="M535,284 L751,284" marker-end="url(#ar2)"/><text x="545" y="278">6 · capture (PayPal-Request-Id)</text>
+    <path class="ln" d="M751,310 L539,310" marker-end="url(#ar2)"/><text x="545" y="328">COMPLETED, amount, payer, shipping</text>
+    <text x="545" y="350">7 · amount = frozen total? → Paid</text>
+    <path class="ln" d="M531,384 L99,384" marker-end="url(#ar2)"/><text x="110" y="378">8 · next poll shows Paid + name + address</text>
+  </g>
+</svg>
+<p class="small muted">Refund: seller approves → our server calls <code>POST /v2/payments/captures/{id}/refund</code> (empty body = full) with <code>PayPal-Request-Id = refund-{orderId}</code> → Refunded. No webhooks needed for this build.</p>
+</section>
+
+<section>
+<h2>Money safety rules</h2>
+<div class="grid2">
+<div class="card"><h3>Amounts never come from the AI</h3><p class="small">The AI only proposes <i>which</i> action. Amounts come from the frozen order, in integer cents.</p></div>
+<div class="card"><h3>Check before Paid</h3><p class="small">Captured amount and currency must equal the frozen total. A mismatch stays Awaiting payment and is flagged.</p></div>
+<div class="card"><h3>No double charge or refund</h3><p class="small">Every PayPal write has a <code>PayPal-Request-Id</code>; Paid stays Paid; Refunded stays Refunded.</p></div>
+<div class="card"><h3>Seller approves every money action</h3><p class="small"><code>NextActionPolicy</code> only allows Refund on Paid orders and Request payment when nothing is missing.</p></div>
+<div class="card"><h3>Append-only timeline and ledger</h3><p class="small">Each state change writes one <code>order_events</code> row in the <b>same transaction</b> as the status. Money rows are signed cents (+capture, −refund). Tests: Paid ⇒ balance = total; Refunded ⇒ balance = 0.</p></div>
+</div>
+<details><summary>Why statuses plus a log, not full event sourcing?</summary><p class="small">The status stays the source of truth for the rules, so nothing is rebuilt by replaying events (no projections or event versioning). PayPal is already the system of record for money. The log gives the audit trail (who approved what) and a balance that later makes partial refunds simple.</p></details>
+</section>
+
+<section>
+<h2>Stack</h2>
+<div class="tw"><table>
+<tr><th>Piece</th><th>Choice</th><th>Why</th></tr>
+<tr><td>App</td><td>Next.js, React, TypeScript strict, Tailwind</td><td>Carried over</td></tr>
+<tr><td>Data</td><td>SQLite (better-sqlite3, fallback node:sqlite)</td><td>One file; resets on Render restart, fine with Reset demo</td></tr>
+<tr><td>Validation</td><td>Zod</td><td>Checks Gemini output, PayPal responses, route inputs</td></tr>
+<tr><td>AI</td><td>Gemini free tier: Flash (read), Flash-Lite (intent)</td><td>No budget; structured output</td></tr>
+<tr><td>Payments, server</td><td>PayPal REST: Orders v2, Payments v2</td><td>Exact control of amounts, idempotency</td></tr>
+<tr><td>Payments, page</td><td>PayPal JS SDK buttons (<code>@paypal/react-paypal-js</code>)</td><td>PayPal's own trusted buttons</td></tr>
+<tr><td>Hosting</td><td>Render free web service</td><td>Judges open a link; first open may take ~1 min</td></tr>
+<tr><td>Quality</td><td>Vitest, ESLint, Prettier</td><td>Carried over; size and layer rules enforced</td></tr>
+</table></div>
+<details><summary>Why not the PayPal Agent Toolkit at runtime?</summary><p class="small">Its tools let the AI fill in amounts and parameters. We keep money out of the AI's hands. Its tool names also differ across versions (<code>pay_order</code> vs <code>capture_order</code>). A toolkit adapter can sit behind the same <code>PaymentGateway</code> port if time remains. Disclosed in the submission.</p></details>
+</section>
+
+<section>
+<h2>Data model</h2>
+<div class="tw"><table>
+<tr><th>Table</th><th>Holds</th></tr>
+<tr><td>conversations</td><td>customer name, channel, last customer / handled message</td></tr>
+<tr><td>messages</td><td>direction, kind (text, option reply, pay link), text, options, unique client ID</td></tr>
+<tr><td>orders</td><td>number (#1001+), status, delivery fee, frozen total, pay token, draft</td></tr>
+<tr><td>order_items · order_details</td><td>product, variant, size, quantity, unit price; Found / Missing / Set by you with quote</td></tr>
+<tr><td>payments</td><td>PayPal order ID, attempt, capture ID, refund ID, payer name, email, shipping address, captured amount</td></tr>
+<tr><td>proposals</td><td>kind (ask, request payment, remind, refund), reason, quote, status</td></tr>
+<tr><td>order_events</td><td>append-only: type, actor (customer, AI, agent, seller, PayPal), summary, quote, signed amount, PayPal fee and net, PayPal reference</td></tr>
+<tr><td>sequences</td><td>next order number</td></tr>
+</table></div>
+</section>
+
+<section>
+<h2>Build order: 5 days</h2>
+<div class="tl">
+<div class="card"><span class="day">Sat 7</span><span class="small">Skeleton, domain classes, policy, tests. Storage and the two-phone demo chatting (no AI).</span></div>
+<div class="card"><span class="day">Sun 8 – Mon 9</span><span class="small"><b>PayPal first:</b> gateway, Request payment by hand, pay page, capture, Paid, refund, with a real sandbox round trip.</span></div>
+<div class="card"><span class="day">Mon 9</span><span class="small">Gemini Read order, settling, options, drafts.</span></div>
+<div class="card"><span class="day">Tue 10</span><span class="small">Agent proposals, Orders tab, Reset demo, polish.</span></div>
+<div class="card"><span class="day">Wed 11</span><span class="small">Deploy to Render, README, MIT LICENSE, video, submission.</span></div>
+<div class="card"><span class="day">Thu 12</span><span class="small">Buffer. Deadline 12:00 pm Pacific.</span></div>
+</div>
+<p class="small muted" style="margin-top:10px">If time is short, cut in this order: Remind proposal → payer column → AI-written thank-you and refund messages → the agent (keep the buttons).</p>
+</section>
+
+<details><summary>Failure modes</summary><ul class="small">
+<li>Gemini limited or invalid → "Couldn't read this conversation"; seller types details and can still request payment.</li>
+<li>PayPal down → nothing changes; retries are safe.</li>
+<li>Declined after approval → buyer retries through PayPal's buttons.</li>
+<li>Amount mismatch → not Paid, flagged.</li>
+<li>Paid twice in two tabs → second capture returns Paid.</li>
+<li>PayPal order expired → a new one is created on the next attempt.</li>
+<li>Render asleep or restarted → slow first load; data cleared; record the video locally.</li>
+</ul></details>
+<details><summary>How someone runs it</summary><ul class="small">
+<li>Hosted: the Render URL; sandbox buyer login in the Devpost testing notes, never in the repo.</li>
+<li>Local: <code>npm install</code> → copy <code>.env.example</code> to <code>.env.local</code> (Gemini key, PayPal sandbox client ID and secret, public client ID, base URL) → <code>npm run dev</code>.</li>
+</ul></details>
+<details><summary>To verify at build step 1</summary><ul class="small"><li>Gemini model IDs and free limits; the structured-output call.</li><li><code>better-sqlite3</code> locally and on Render.</li><li>A sandbox create → approve → capture → refund round trip, noting which payer and shipping fields come back.</li></ul></details>
+</main>
+</body>
+</html>

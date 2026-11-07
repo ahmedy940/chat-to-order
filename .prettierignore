@@ -1,0 +1,9 @@
+.next
+node_modules
+data
+devpost
+.agents
+agent
+.claude
+package-lock.json
+skills-lock.json

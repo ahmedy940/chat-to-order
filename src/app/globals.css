@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* Look and Feel tokens (spec.md > Look and Feel). AI blue is only for what the AI wrote or proposes. */
+@theme {
+  --color-page: #f1f1f1;
+  --color-card: #ffffff;
+  --color-line: #e3e3e3;
+  --color-ink: #1a1a1a;
+  --color-muted: #616161;
+  --color-ai: #4a5bd6;
+  --color-ai-soft: #e8ebfc;
+
+  --color-found-bg: #e3f1df;
+  --color-found-fg: #205b1d;
+  --color-missing-bg: #fde2dd;
+  --color-missing-fg: #8e1f0b;
+  --color-missing-row: #fff4f2;
+  --color-set-bg: #ededed;
+  --color-set-fg: #4a4a4a;
+  --color-awaiting-bg: #fff1c2;
+  --color-awaiting-fg: #6a4a00;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius-card: 12px;
+  --radius-bubble: 16px;
+}
+
+body {
+  font-size: 15px;
+}

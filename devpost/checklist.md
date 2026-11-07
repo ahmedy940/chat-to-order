@@ -1,0 +1,122 @@
+---
+doc: checklist
+status: approved
+target: PayPal AI Hackathon (Thu 12 Nov 2026, 12:00 pm Pacific)
+---
+
+# Build Checklist
+
+Build mode: learn (chosen Fri 6 Nov 2026, Pacific)
+Scope: Chat to Paid, as approved on Sat 7 Nov (`scope.md`, `prd.md`, `spec.md`). The video and the Devpost submission belong to `6-ship`, not this checklist.
+If time runs short, cut in this order (`spec.md > Decisions and Open Issues`): the Remind proposal, the payer column in the Orders tab, the AI-written thank-you and refund messages (use fixed text), then the agent (keep the buttons).
+
+## Slices
+
+- [ ] **1. The order and money rules work, and Gemini and PayPal are proven**
+  Becomes usable: `npm test` shows the rules passing: the total, what's missing, when payment can be requested, the allowed status changes, Paid only when the captured amount matches, the balance (Paid = the total, Refunded = $0.00), and the agent policy allowing at most one fitting proposal. `npm run check:ai` sends a made-up chat to Gemini and prints an order reading that passed our schema check. `npm run check:paypal` creates a sandbox PayPal order from a made-up order, prints a link where you pay as the sandbox buyer, then captures and fully refunds it, printing the payer's name, email and shipping address. `npm run dev` opens an empty page in the app's colours, and `npm run lint` enforces the file-size, function-size and layer rules.
+  Why now: Every later step leans on these rules, and four unknowns can each change the plan: Gemini's free model IDs and limits, its structured-output call, the payer and shipping fields PayPal really returns, and `better-sqlite3` on Node 23. Finding out now is cheap. Project bootstrapping happens here.
+  PRD ref: `prd.md > Features and Behavior` (Request Payment, Paid, Refund, Order Timeline, Seller-Approved Agent), `prd.md > Open Questions`
+  Spec ref: `spec.md > Stack`, `spec.md > Architecture and Code Principles`, `spec.md > Components` (Domain, Ports, Adapters), `spec.md > File Structure`, `spec.md > External Services`, `spec.md > Decisions and Open Issues`
+  Build: Scaffold Next.js (App Router, strict TypeScript) with Tailwind tokens from Look and Feel, Vitest, ESLint (`max-lines` 250, `max-lines-per-function` 30, `complexity`, `no-restricted-imports` for the layers) and Prettier; add `.env.example`, keep `data/` out of git, and pin Node in `engines`. Write the domain in `src/domain/` (`Order`, `OrderItem`, `OrderDetail`, `Payment`, `Money`, `OrderEvent`, `NextActionPolicy`, types, errors) with tests in `tests/domain/`. Add the shared Zod schemas (`OrderReadingSchema`, `IntentSchema`, PayPal responses). Install `better-sqlite3` and confirm it opens a database. Look up the current Gemini free-tier model IDs and the `@google/genai` structured-output call, then write `scripts/check-ai.ts` and `scripts/check-paypal.ts` (OAuth token → create order → wait for the buyer's approval → capture → refund, each write with a `PayPal-Request-Id`).
+  Verify (mechanical): `npm test`, `npm run lint` and `npx tsc --noEmit` pass; `better-sqlite3` opens a database on Node 23; `npm run dev` serves `/` with status 200; `npm run check:ai` returns a reading that passes `OrderReadingSchema`; `npm run check:paypal` completes create → capture → refund in the sandbox with every response passing its schema, and any payer or shipping field that differs from the spec is recorded under Revisions; `git status` never lists `.env.local`.
+  Learner check: Put your Gemini key and your PayPal sandbox app's client ID and secret in `.env.local` yourself (never in chat). Run `npm run check:ai` and read the order it printed. Then run `npm run check:paypal`, open the link it prints, pay as your sandbox buyer, and confirm the terminal shows that buyer's name and address, then "refunded".
+  Commit: `Set up project, order and money rules with tests, and Gemini and PayPal checks`
+
+- [ ] **2. Two phones chat with each other, and the chat is saved**
+  Becomes usable: At http://localhost:3000, two phone frames sit side by side: Customer on the left, Linen and Co. Seller on the right. A message typed as the customer appears on both phones within about 2 seconds. The seller Inbox shows the conversation, and opening it shows the chat with times. The seller can type a reply and press Send. New customer starts a second conversation under a different made-up name. Below 1024px, a switch flips between the two phones. Refreshing the page keeps everything. No AI or payments yet.
+  Why now: It's the front door every later step uses, and the first place the data model can be wrong. Storage is proven by real messages here instead of being built alone.
+  PRD ref: `prd.md > The Core Journey` (steps 1–2), `prd.md > Screens and Layout` (Demo page, Customer phone, Seller phone), `prd.md > Features and Behavior` (Chat (customer ↔ seller), Demo Data and Reset), `prd.md > States and Boundaries` (Empty)
+  Spec ref: `spec.md > The Core Journey Through the System` (steps 1–2), `spec.md > Components` (Use Cases, Ports, Adapters, Routes, Screens), `spec.md > Data Model`
+  Build: `schema.sql`, `database.ts`, the SQLite repositories and `UnitOfWork`; `ReceiveCustomerMessage` (saved once per client ID) and free-text `SendReply` through `DemoChannel`; `GetInbox`, `GetSellerConversation` and `GetCustomerConversation`; `container.ts`; the routes `customer/messages`, `customer/conversations/[id]`, `inbox`, `conversations/[id]` and `conversations/[id]/send`; `usePolling`; `PhoneFrame`, `CustomerChat`, `SellerApp` (Inbox, `ConversationView`) and the phone switch; `npm run db:reset`. In-memory repositories for tests.
+  Verify (mechanical): Use-case tests pass, including a repeated client ID saved only once; lint and typecheck pass; with the dev server running, a customer message posted with `curl` comes back from both the seller and customer views, a seller reply shows in the customer view, both survive a server restart, and `npm run db:reset` clears them; a browser-pane screenshot at 1280 wide shows both phones.
+  Learner check: Open http://localhost:3000. Type an order as the customer, answer as the seller, then press New customer and send one more message. Refresh the page and check both conversations are still there.
+  Commit: `Add the two-phone demo page with saved chat`
+
+- [ ] **3. The customer pays the order with PayPal, and it turns Paid**
+  Becomes usable: In a conversation, the seller fills in the order card by hand with product, size, quantity, unit price and delivery fee. This is the same "type the details" path the seller uses whenever the AI can't read a chat. The total updates as they type. With nothing missing, Request payment freezes the order, creates its pay link and drafts "Here's your order #1001, total $128. Pay securely here: [link]". After Send, the order bar shows Awaiting payment, and the customer phone shows a link card. The link opens the pay page in a new tab: shop name, order number, items, delivery, total and PayPal's buttons. Paying as the sandbox buyer shows "Paid. Thank you!". Within about 2 seconds, the seller's order shows Paid with the buyer's name, email, shipping address and PayPal transaction ID, plus a drafted thank-you. Opening the link again says "This order is already paid." The order's timeline lists each step, with +$128.00 paid and a balance of $128.00.
+  Why now: This is the half of the kernel the PayPal judges score most, and the riskiest integration, so it comes straight after the front door. Filling the card by hand means payment never waits on the AI.
+  PRD ref: `prd.md > The Core Journey` (steps 7–9), `prd.md > Features and Behavior` (Settling What's Sold, Request Payment, Pay Page, Paid, Order Timeline), `prd.md > Screens and Layout` (Seller phone, Pay page), `prd.md > States and Boundaries` (PayPal unreachable, payment made while the seller's screen was closed)
+  Spec ref: `spec.md > The Core Journey Through the System` (steps 8–10), `spec.md > Architecture and Code Principles` (money safety rules, order timeline), `spec.md > Components` (Use Cases, Ports, Adapters, Routes, Screens), `spec.md > Data Model`, `spec.md > Important Failure Modes`
+  Build: Order storage (orders, items, details, payments, `order_events` with `seq`, and numbering from #1001), with each use case's writes and its event in one transaction; starting the card by hand and `SettleDetail` for typed values; `RequestPayment` (random 128-bit pay token, fixed-text payment draft for now); `PreparePayPalOrder`, `CapturePayment` (amount check, idempotent) and `PayPalRestGateway`; `FakePaymentGateway` for tests; the routes `orders/[id]/details`, `orders/[id]/request-payment`, `pay/[token]`, `pay/[token]/paypal-order` and `pay/[token]/capture`; `OrderBar`, `OrderSheet` (with `DetailRow`, the Payment section and the Timeline), `PayLinkCard`, and the `/pay/[token]` page with `@paypal/react-paypal-js`, including the closed-window and declined messages.
+  Verify (mechanical): Use-case tests with the fake gateway pass (payment only when nothing is missing, one pay link per order, capturing twice marks Paid once, a mismatched amount stays Awaiting payment and is flagged, every status change writes its event in the same transaction, the balance equals the total when Paid); lint and typecheck pass; live in the sandbox, the request-payment and PayPal-order routes return a payable PayPal order, and after the learner pays on the pay page, the seller view returns Paid with the payer fields saved and PayPal's order shows `COMPLETED`.
+  Learner check: On a customer's conversation, fill in the card by hand, press Request payment, then Send. On the customer phone, open the link, pay as your sandbox buyer, and watch the seller's order turn Paid with that buyer's name and address. Then open the link again. Does the pay page feel like something a customer would trust?
+  Commit: `Request payment and capture it on a PayPal pay page`
+
+- [ ] **4. Refund or cancel from the order**
+  Becomes usable: On a Paid order, Refund asks "Refund $128 to Sarah Lee? This can't be undone." Confirming refunds the full amount through PayPal. The order shows Refunded with the refund ID, a short refund message is drafted, and the timeline adds −$128.00 refunded with a balance of $0.00. If PayPal refuses, the reason shows and the order stays Paid. Before payment, Cancel order sets Cancelled, and the pay page then says "This order was cancelled by the shop." with no buttons.
+  Why now: It completes the money loop on the order, the "one tap, no searching in PayPal" moment, while the PayPal code is fresh.
+  PRD ref: `prd.md > The Core Journey` (steps 10–11), `prd.md > Features and Behavior` (Refund, Cancel, Order Timeline)
+  Spec ref: `spec.md > The Core Journey Through the System` (step 11), `spec.md > Architecture and Code Principles` (money safety rules, order timeline), `spec.md > Components` (Use Cases, Routes, Screens), `spec.md > Important Failure Modes`
+  Build: `RefundPayment` (`refund-{orderId}` request ID, idempotent, a `RefundFailed` event when PayPal refuses) and `CancelOrder`; the routes `orders/[id]/refund` and `orders/[id]/cancel`; the confirmation dialog; the Refunded and Cancelled states on the card and the pay page; a fixed-text refund draft for now.
+  Verify (mechanical): Tests pass for refunding only Paid orders, refunding twice refunding once, a refused refund leaving the order Paid with a `RefundFailed` line, cancelling only before payment, and a $0.00 balance after a refund; lint and typecheck pass; live in the sandbox, refunding the order paid in slice 3 shows Refunded and PayPal's capture shows `REFUNDED`; a cancelled order's pay page returns the cancelled state.
+  Learner check: Refund the order you paid in the last step and check that its timeline balance reads $0.00. Then start a second order, request payment, cancel it, and open its pay link.
+  Commit: `Refund paid orders and cancel unpaid ones`
+
+- [ ] **5. Read order fills the card, and one drafted question closes the gaps**
+  Becomes usable: The seller taps Read order. "Reading the conversation…" shows, then the card fills in from the chat: one or more items with product, size or variant, quantity and price. Each detail is Found (with the quoted message), Missing ("Never mentioned") or Set by you. A price not written in the chat stays Missing. For a missing size, the seller ticks Ask customer and offers up to 3 options (never for a price). The reply box holds a blue Draft asking only for what's missing, with the options as buttons. The seller can edit it, then presses Send, and pressing twice sends once. The order shows Waiting for customer. The customer taps M and the card fills in. Read again appears after new customer messages, and seller-set values are never overwritten. The payment, thank-you and refund messages are now written by the AI around the link and amounts our code inserts. If Gemini fails, the card says "Couldn't read this conversation. Try again." and the seller can still type the details.
+  Why now: The other half of the kernel: the conversation becomes the order. It comes after PayPal on purpose (`spec.md > Decisions and Open Issues`), so payment never waits on the AI.
+  PRD ref: `prd.md > The Core Journey` (steps 3–6), `prd.md > Features and Behavior` (Read Order, Settling What's Sold, Drafted Message), `prd.md > States and Boundaries` (AI busy, AI free-tier limit reached)
+  Spec ref: `spec.md > The Core Journey Through the System` (steps 3–6), `spec.md > Components` (Use Cases, Ports, Adapters, Screens), `spec.md > Important Failure Modes`
+  Build: `ReadOrder` (messages since the last finished order, seller-set values kept, the next number for a new order, an `OrderRead` event); `GeminiAiProvider.readOrder` and `draftMessage` with their prompts; `FakeAiProvider`; Ask customer in `SettleDetail` (up to 3 options), with an option reply applied as the customer's answer; `SendReply` keyed by draft ID (a stale draft returns 409) with a `QuestionSent` event; `DraftComposer`, the Read order and Read again button, and option buttons on the customer phone; the busy and error states.
+  Verify (mechanical): Tests with the fake AI pass (seller-set values never overwritten, a price not in the chat stays Missing, the 3-option limit and no options for a price, a stale draft rejected, one send per draft ID, an option reply settling its detail, an AI failure saving nothing); lint and typecheck pass; live, Read order on a made-up chat returns a card with Found and Missing details and their quotes, and the ask → tap → complete loop works through the routes.
+  Learner check: As the customer, type "hi, 2 of the beige linen dress please". Tap Read order, set the price and the delivery fee, offer S and M, and send the draft. Tap M as the customer. Did the card read the chat the way you would, and does the draft sound like your shop?
+  Commit: `Read orders from the chat with Gemini and draft the question`
+
+- [ ] **6. The agent proposes the next step, and you approve it**
+  Becomes usable: After each customer message (and after Read order), a blue proposal card above the reply box offers at most one next step, with a one-line reason quoting the customer: Ask (details missing), Request payment (nothing missing), Remind (awaiting payment, and the customer wrote without paying) or Refund (paid, and the customer asks to return or cancel). Approve runs it through the same actions as the order card's buttons. Dismiss hides it until the next customer message. Inbox rows with a proposal show a blue dot and come first. The timeline records each proposal and whether you approved or dismissed it. If the AI is unavailable, no proposal shows and the order card's buttons still work.
+  Why now: It depends on every action it can propose (slices 3–5) already working, and it adds the agentic-commerce part without ever moving money on its own.
+  PRD ref: `prd.md > The Core Journey` (steps 6 and 10), `prd.md > Features and Behavior` (Seller-Approved Agent, Order Timeline), `prd.md > Screens and Layout` (Seller phone)
+  Spec ref: `spec.md > The Core Journey Through the System` (steps 7 and 11), `spec.md > Components` (Domain, Use Cases, Ports, Routes, Screens), `spec.md > Data Model`
+  Build: `ProposeNextAction` (once per customer message, under a per-conversation lock, run on each poll), `GeminiAiProvider.classifyIntent` (Flash-Lite), and `ApproveProposal` and `DismissProposal` calling the existing use cases; proposal storage; the `RefundProposed`, `ProposalApproved` and `ProposalDismissed` events; the routes `proposals/[id]/approve` and `proposals/[id]/dismiss`; `ProposalCard`; the blue dot and sorting in the Inbox. Remind is the first to cut.
+  Verify (mechanical): Tests pass for the policy (each proposal only in its allowed status, none when the AI fails), the agent pass running once per message under the lock, Approve running the right use case with amounts taken from the order, and Dismiss staying hidden until the next message; lint and typecheck pass; live, "can I return them?" on a Paid order produces a Refund proposal, and approving it refunds in the sandbox.
+  Learner check: Run the whole story: order as the customer, tap Read order, approve the agent's Request payment, pay, then write "sorry, can I return them?" and approve the refund. Did the agent suggest what you'd have done next, and did anything feel like it acted without you?
+  Commit: `Add seller-approved agent proposals`
+
+- [ ] **7. Orders tab, Reset demo and the finished look**
+  Becomes usable: The Orders tab lists every order, newest first: number, customer, item summary, total, status, payer and date. Tapping a row opens that conversation with its card. Reset demo clears everything and restarts numbering at #1001. The demo page shows its one-line guide and the sandbox notes ("Payments use PayPal's sandbox. No real money."). Colours, badges, status styles (including Cancelled with a strikethrough total) and copy match the Look and Feel, both at 1280 wide and at phone width.
+  Why now: The core journey works end to end by now, and this makes it ready for judges and the video.
+  PRD ref: `prd.md > Features and Behavior` (Orders Tab, Demo Data and Reset), `prd.md > Screens and Layout`, `prd.md > Look and Feel`, `prd.md > States and Boundaries`
+  Spec ref: `spec.md > Look and Feel`, `spec.md > Components` (Use Cases, Routes, Screens)
+  Build: `ListOrders` and its route, and the Orders tab; `ResetDemo` and its route; the guide and the notes; a polish pass against Look and Feel and the States and Boundaries copy.
+  Verify (mechanical): Tests pass for the Orders list's order and for Reset restarting numbering at #1001; lint, typecheck and tests pass; the full core journey runs against the dev server through scripted requests, with the learner's sandbox payment as the one manual step; browser-pane screenshots at 1280 wide and at 390 × 844 are checked against Look and Feel.
+  Learner check: Press Reset demo, then run the whole demo once in a wide window and once at phone size. What would you change before judges see it?
+  Commit: `Add the Orders tab, Reset demo and polish`
+
+- [ ] **8. Hosted on Render, so judges just open a link**
+  Becomes usable: A Render URL runs the app, with the sandbox credentials set in Render's dashboard. A judge opens it on a laptop, runs the full journey and pays with the sandbox buyer. The README covers what the app is, the hosted link, local setup from `.env.example`, the sandbox buyer step and Reset. An MIT LICENSE is in place. The first open after idle may take up to a minute, and the demo notes say so.
+  Why now: Last, because it needs your GitHub and Render accounts and a finished app. It's the one step where something outside our code can surprise us (Render's build, `better-sqlite3` on its Node version); `node:sqlite` behind the same repositories is the fallback.
+  PRD ref: `prd.md > What We're Building` (a hosted URL), `prd.md > States and Boundaries` (Hosted app asleep)
+  Spec ref: `spec.md > Where It Runs and How Someone Tries It`, `spec.md > Stack` (Hosting), `spec.md > External Services` (Render), `spec.md > Important Failure Modes`
+  Build: `render.yaml` (no secrets), `APP_BASE_URL` used for pay links, `README.md` and the MIT `LICENSE`. Pushing to a GitHub repository (it can stay private until `6-ship`) and connecting Render happen only with your go-ahead, and you set the secrets in Render's dashboard yourself.
+  Verify (mechanical): A clean copy of the project installs, builds and starts (`npm ci && npm run build && npm start`) by following only the README; Render's build log is clean; the hosted URL answers with status 200; the full journey runs on the hosted URL, with the sandbox payment and refund recorded on the order; a search of the repository for the key and secret values finds nothing.
+  Learner check: Open the hosted link in a private window as if you were a judge, follow only the on-page guide, and pay with the sandbox buyer. Was anything confusing for someone who's never seen the app?
+  Commit: `Deploy to Render with README and MIT license`
+
+## Hands-on Checkpoints
+
+- [ ] Early usable behavior explored — after slice 3 (the first real PayPal payment turns the order Paid), while the pay page and the order card can still be reshaped
+- [ ] Whole journey on your laptop — after slice 6, before polish and hosting: Read order → agent → pay → refund in one run
+- [ ] Final kick-the-tires exploration and feedback completed
+
+## Final Review
+
+- [ ] Final review complete — feedback resolved and learner confirms ready to ship
+
+## Code Tour and App Map
+
+- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
+- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
+- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+
+Activity and evidence: [what actually happened; real document/test/code references; unfinished work if interrupted]
+Route and stops: [actual paths and symbols; guided stops completed, or reference-only route]
+Edit outcome: [tried/kept/reverted/declined/not applicable; verification if changed]
+Reflection: [offered/answered/declined/already covered — personal answer belongs only in the ignored profile]
+Activity mode: [live app and editor, explicit static fallback, focused alternative, prior practice, or recap]
+
+## Revisions
+
+- The default model for reading orders is `gemini-3.6-flash`, not `gemini-3.8-flash` — on the free tier (6 Nov), 3.8 answered "503 high demand" and then took over 30 s, while 3.6 read the sample chat correctly in about 5 s. Calls use thinking level LOW (MINIMAL for the intent check), because Gemini 3 models think by default and were slow. The model stays a setting (`GEMINI_READ_MODEL`).
+- Tool versions: TypeScript 5.9 and ESLint 9, not the newest TypeScript 7 and ESLint 10 — the Next.js and typescript-eslint lint plugins don't support those yet. Node 23.7 (the learner's install) runs everything, including `better-sqlite3`, even though Vitest and ESLint list Node 23 as unsupported (it's past end-of-life); slice 8 pins Render to Node 22 LTS.
+- PayPal's `invoice_id` will be the order number plus a short unique suffix (for example `1001-k3f9`), not the bare number — PayPal rejects a repeated invoice ID, and Reset demo restarts numbering at #1001.
+- The PayPal sandbox shop and buyer must be **United States** accounts, with the app linked to the US business account. With an Egypt business account, PayPal approved the payment but refused the capture ("possible compliance violation"); the US pair captured and refunded $128.00 cleanly (7 Nov). The sandbox capture returned everything the spec reads: payer name and email, ship-to name and full address, and the fee and net (`seller_receivable_breakdown`: $4.96 fee, $123.04 net on $128.00). The Devpost testing instructions (`6-ship`) must give judges a US sandbox buyer.

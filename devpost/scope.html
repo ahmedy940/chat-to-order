@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat to Paid scope</title>
+<style>
+:root{
+  --bg:#f6f5f1;--surface:#ffffff;--surface2:#efede7;--text:#1f1e1b;--muted:#68665f;--border:#e0ddd4;
+  --accent:#3550c4;--accent-bg:#e8ecfb;
+  --cust:#1d7a55;--cust-bg:#e2f3ea;--seller:#5146b0;--seller-bg:#ecebfc;--pp:#0b5fa5;--pp-bg:#e0eefa;
+  --ok:#2f6b12;--ok-bg:#e8f3dc;--warn:#8a5a00;--warn-bg:#fbefd6;--danger:#a32d2d;--danger-bg:#fbe9e9;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161614;--surface:#1f1f1c;--surface2:#2a2a26;--text:#ecebe6;--muted:#a3a19a;--border:#3a3934;
+  --accent:#9db0ff;--accent-bg:#232b4d;
+  --cust:#7fd6ad;--cust-bg:#173a2b;--seller:#b9b2ff;--seller-bg:#2a2650;--pp:#8cc4f2;--pp-bg:#15304a;
+  --ok:#a9d987;--ok-bg:#24361a;--warn:#f0c46c;--warn-bg:#3a2d10;--danger:#f2a3a3;--danger-bg:#3d1c1c;}}
+:root[data-theme="dark"]{
+  --bg:#161614;--surface:#1f1f1c;--surface2:#2a2a26;--text:#ecebe6;--muted:#a3a19a;--border:#3a3934;
+  --accent:#9db0ff;--accent-bg:#232b4d;
+  --cust:#7fd6ad;--cust-bg:#173a2b;--seller:#b9b2ff;--seller-bg:#2a2650;--pp:#8cc4f2;--pp-bg:#15304a;
+  --ok:#a9d987;--ok-bg:#24361a;--warn:#f0c46c;--warn-bg:#3a2d10;--danger:#f2a3a3;--danger-bg:#3d1c1c;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:920px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:30px;font-weight:600;margin:6px 0 4px;letter-spacing:-.01em}
+h2{font-size:20px;font-weight:600;margin:0 0 12px}
+h3{font-size:16px;font-weight:600;margin:0 0 6px}
+p{margin:0 0 10px}
+a{color:var(--accent)}
+.lead{font-size:18px;color:var(--muted);max-width:720px}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--warn-bg);color:var(--warn)}
+section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin:18px 0}
+.kernel{border:2px solid var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:12px}
+.card{background:var(--surface2);border-radius:10px;padding:14px 16px}
+.muted{color:var(--muted)}.small{font-size:14px}
+ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+th{font-weight:600;color:var(--muted);font-size:13px;border-top:none}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--muted)}
+.step{border-left:4px solid var(--border);border-radius:0 10px 10px 0}
+.s-c{border-left-color:var(--cust)}.s-s{border-left-color:var(--seller)}.s-p{border-left-color:var(--pp)}.s-a{border-left-color:var(--accent)}
+.who{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px}
+.w-c{background:var(--cust-bg);color:var(--cust)}.w-s{background:var(--seller-bg);color:var(--seller)}.w-p{background:var(--pp-bg);color:var(--pp)}.w-a{background:var(--accent-bg);color:var(--accent)}
+details{border:1px solid var(--border);border-radius:10px;padding:0 16px;margin:10px 0;background:var(--surface)}
+summary{cursor:pointer;font-weight:600;padding:12px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted);font-weight:400;font-size:20px}
+details[open] summary::after{content:"−"}
+details[open]{padding-bottom:12px}
+.stepper{background:var(--surface2);border-radius:10px;padding:14px 16px}
+.ctl{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+button{font:inherit;font-size:14px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--muted)}
+.dots{display:flex;gap:6px;margin-top:10px}.dots span{width:8px;height:8px;border-radius:50%;background:var(--border)}.dots span.on{background:var(--accent)}
+.col-in{border-top:3px solid var(--ok)}.col-later{border-top:3px solid var(--warn)}.col-cut{border-top:3px solid var(--danger)}
+</style>
+</head>
+<body>
+<main>
+<span class="tag">Approved · Sat 7 Nov 2026</span>
+<h1>chat-to-order: Chat to Paid</h1>
+<p class="lead">Keep selling in your chat. The conversation becomes the order, the order becomes a PayPal payment, and the payment, the address and any refund stay attached to that order.</p>
+<p class="small muted">Target: PayPal AI Hackathon · Thu 12 Nov 2026, 12:00 pm Pacific · Canonical file: <code>devpost/scope.md</code></p>
+
+<section class="kernel">
+<h2>The unique kernel, in 4 moves</h2>
+<div class="grid4">
+  <div class="card step s-a"><span class="who w-a">AI</span><h3 style="margin-top:8px">1 · Chat → order</h3><p class="small">The AI reads the chat, fills the order card, marks what's missing, drafts one question. The seller sends it.</p></div>
+  <div class="card step s-s"><span class="who w-s">Seller</span><h3 style="margin-top:8px">2 · Order → pay page</h3><p class="small"><b>Request payment</b> freezes the order and drafts a link to a page that shows exactly what was agreed.</p></div>
+  <div class="card step s-p"><span class="who w-p">PayPal</span><h3 style="margin-top:8px">3 · Customer pays</h3><p class="small">Items, delivery and total, with PayPal's buttons. Name and address come from their PayPal account.</p></div>
+  <div class="card step s-s"><span class="who w-s">Seller</span><h3 style="margin-top:8px">4 · Paid → refund</h3><p class="small">The order turns <b>Paid</b> by itself. A refund is one approved tap on the same order.</p></div>
+</div>
+<p class="small" style="margin-top:14px"><b>The agent</b> watches the chat and proposes the next step (ask, request payment, remind, refund). The seller approves each one. It never moves money or messages a customer on its own.</p>
+</section>
+
+<section>
+<h2>What's different from tools sellers already have</h2>
+<div class="tw"><table>
+<tr><th>Tool</th><th>No catalog</th><th>Order built from chat</th><th>Payment tied to order</th><th>Refund on the order</th><th>Human sends</th></tr>
+<tr><td>Payment links (PayPal, Stripe)</td><td class="yes">Yes</td><td class="no">No, retyped</td><td class="no">No, matched by hand</td><td class="no">In PayPal</td><td class="yes">Yes</td></tr>
+<tr><td>PayPal invoicing</td><td class="yes">Yes</td><td class="no">No, retyped</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes (email)</td></tr>
+<tr><td>Catalog checkouts (Take App, Shopify)</td><td class="no">Needs one</td><td class="no">Buyer fills a cart</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+<tr><td>Chat bots</td><td class="no">Usually</td><td class="yes">Yes</td><td class="yes">Often</td><td class="no">Varies</td><td class="no">No, a bot</td></tr>
+<tr><td>Order readers (ZVYA, Inbox2Order, ChatGPT)</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No payment</td><td class="no">No</td><td class="yes">Yes</td></tr>
+<tr><td><b>chat-to-order</b></td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes, automatically</td><td class="yes">One tap</td><td class="yes">Yes, AI proposes</td></tr>
+</table></div>
+</section>
+
+<section>
+<h2>What "working" looks like: the judge's demo</h2>
+<p class="small muted">One hosted link, two phones side by side. Step through it.</p>
+<div class="stepper">
+  <div id="st"></div>
+  <div class="ctl"><button id="prev">Back</button><button id="next">Next</button><span class="small muted" id="cnt"></span></div>
+  <div class="dots" id="dots"></div>
+</div>
+<p class="small" style="margin-top:12px"><b>The "oh, that's cool" beat:</b> the order turns Paid on its own, already carrying the customer's address, and the refund needs one tap with no searching in PayPal.</p>
+</section>
+
+<section>
+<h2>Who it's for</h2>
+<p>A one-person or tiny-team seller (for example, clothing) who sells through chat in English, takes payment with PayPal, and has no full online store.</p>
+<p class="small muted">Today: orders in a notebook, amounts typed into payment links, scrolling chats for an address, checking PayPal to see who paid, finding the right payment in PayPal to refund it.</p>
+</section>
+
+<section>
+<h2>Boundary</h2>
+<div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
+<div class="card col-in"><h3>In this build</h3><ul class="small">
+<li>Demo page: customer phone + seller phone</li>
+<li><b>Read order</b> button: items, size, quantity, price, delivery fee; Found / Missing / Set by you</li>
+<li>Seller settles what's sold, or offers up to 3 options</li>
+<li>One drafted message at a time; only the seller sends</li>
+<li>Request payment → pay-for-this-order page → PayPal sandbox → Paid with payer name and address</li>
+<li>Full refund after the seller approves; cancel before payment</li>
+<li>Seller-approved agent: Ask, Request payment, Remind, Refund</li>
+<li>Orders tab, Reset demo, hosted URL</li>
+</ul></div>
+<div class="card col-later"><h3>Later</h3><ul class="small">
+<li>WhatsApp Cloud API adapter (maybe with Meta "coexistence", not yet verified), then Instagram and Messenger</li>
+<li>Automatic, live reading</li>
+<li>Unclear and clashing details, editing items</li>
+<li>Partial refunds, disputes, chargebacks</li>
+<li>Payments outside the app</li>
+<li>Product list, customers view, analytics</li>
+<li>Login, several sellers with their own PayPal</li>
+</ul></div>
+<div class="card col-cut"><h3>Cut</h3><ul class="small">
+<li>The real WhatsApp test number in this build</li>
+<li>Automatic buying detection and live filling</li>
+<li>Asking name, phone and address in the chat</li>
+<li>Bare payment links or bank details</li>
+<li>An autonomous agent</li>
+<li>Catalog, inventory, analytics tables</li>
+<li>Arabic chats for now</li>
+</ul></div>
+</div>
+</section>
+
+<details><summary>Why this matters to you</summary>
+<ul class="small"><li>You co-founded DropX and know the seller side of chat selling.</li><li>You want a "winning project that can add value", and possibly a startup.</li><li>You asked for "only what needs to be built for paypal with no extra work that may lead to bugs or unfinished flow".</li></ul>
+</details>
+<details><summary>Identity and look</summary>
+<ul class="small"><li>Phone-first, Shopify-calm, iPhone-chat familiar.</li><li>The seller stays in control: 9 in 10 UAE consumers prefer human support (<a href="https://seamlessxtra.com/survey-nine-out-of-ten-uae-consumers-prefer-real-human-customer-support-not-ai/">YouGov for Zbooni</a>).</li><li>No WhatsApp, Instagram or Facebook branding.</li></ul>
+</details>
+</main>
+<script>
+const steps=[
+ ["c","Customer","Types an order","“2 beige linen dresses please”"],
+ ["s","Seller","Taps Read order","The card fills in. Size is Missing. The seller offers S and M, and the drafted question goes out with tap buttons."],
+ ["c","Customer","Taps M","The order is complete. The agent proposes Request payment."],
+ ["s","Seller","Requests payment","The drafted message with the order link goes out."],
+ ["p","PayPal","Customer pays","Linen and Co. · Order #1001 · 2 × Beige linen dress (M) · Delivery $8 · Total $128. Paid with the sandbox buyer account."],
+ ["s","Seller","Order turns Paid","With the buyer's name and shipping address from PayPal."],
+ ["c","Customer","“Can I return them?”","The agent proposes Refund #1001."],
+ ["s","Seller","Approves the refund","The order turns Refunded."]
+];
+const cls={c:"w-c",s:"w-s",p:"w-p"};let i=0;
+const st=document.getElementById("st"),cnt=document.getElementById("cnt"),dots=document.getElementById("dots");
+steps.forEach(()=>dots.appendChild(document.createElement("span")));
+function draw(){const s=steps[i];st.innerHTML=`<span class="who ${cls[s[0]]}">${s[1]}</span><h3 style="margin:8px 0 4px">${i+1}. ${s[2]}</h3><p class="small" style="margin:0">${s[3]}</p>`;cnt.textContent=`${i+1} of ${steps.length}`;[...dots.children].forEach((d,k)=>d.className=k===i?"on":"");}
+document.getElementById("prev").onclick=()=>{i=(i+steps.length-1)%steps.length;draw()};
+document.getElementById("next").onclick=()=>{i=(i+1)%steps.length;draw()};draw();
+</script>
+</body>
+</html>
