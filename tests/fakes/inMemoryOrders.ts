@@ -1,6 +1,6 @@
 import type { DraftRepository } from "@/application/ports/DraftRepository";
 import type { OrderEventRepository } from "@/application/ports/OrderEventRepository";
-import type { OrderRepository } from "@/application/ports/OrderRepository";
+import type { ListedOrder, OrderRepository } from "@/application/ports/OrderRepository";
 import {
   PaymentGatewayError,
   type CreatedPayPalOrder,
@@ -18,6 +18,7 @@ import { FIRST_ORDER_NUMBER } from "@/domain/types";
 
 export class InMemoryOrders implements OrderRepository {
   private readonly rows: OrderSnapshot[] = [];
+  private readonly createdAt = new Map<string, Date>();
   private next = FIRST_ORDER_NUMBER;
 
   get(id: string): Order | null {
@@ -32,6 +33,13 @@ export class InMemoryOrders implements OrderRepository {
     return this.listForConversation(conversationId).at(-1) ?? null;
   }
 
+  listAll(): ListedOrder[] {
+    return [...this.rows].reverse().map((s) => ({
+      order: Order.restore(structuredClone(s)),
+      createdAt: this.createdAt.get(s.id) ?? new Date(0),
+    }));
+  }
+
   listForConversation(conversationId: string): Order[] {
     return this.rows
       .filter((s) => s.conversationId === conversationId)
@@ -41,8 +49,10 @@ export class InMemoryOrders implements OrderRepository {
   save(order: Order): void {
     const snapshot = structuredClone(order.snapshot());
     const index = this.rows.findIndex((s) => s.id === snapshot.id);
-    if (index === -1) this.rows.push(snapshot);
-    else this.rows[index] = snapshot;
+    if (index === -1) {
+      this.rows.push(snapshot);
+      this.createdAt.set(snapshot.id, new Date());
+    } else this.rows[index] = snapshot;
   }
 
   nextNumber(): number {

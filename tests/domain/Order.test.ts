@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { InvalidTransition, OrderLocked, OrderNotPayable, RefundNotAllowed } from "@/domain/errors";
+import {
+  InvalidTransition,
+  LastItem,
+  OrderLocked,
+  OrderNotPayable,
+  RefundNotAllowed,
+  UnknownDetail,
+} from "@/domain/errors";
 import { Order } from "@/domain/Order";
 import { EventType, ItemField, OrderStatus } from "@/domain/types";
 import {
@@ -65,6 +72,40 @@ describe("Reading and settling", () => {
     expect(order.answerOption(at(ItemField.Size), "L")).toBeNull();
     expect(order.answerOption(at(ItemField.Size), "M")?.actor).toBe("customer");
     expect(order.status).toBe(OrderStatus.Draft);
+  });
+});
+
+describe("Removing an item", () => {
+  it("removes an item added by mistake, so the order can be paid again", () => {
+    const order = completeOrder();
+    order.addBlankItem("item-2");
+    expect(order.paymentBlocker()).toBe("3 to settle before requesting payment.");
+
+    const { event } = order.removeItem("item-2");
+    expect(event).toMatchObject({ type: EventType.ItemRemoved, summary: "Item 2 removed" });
+    expect(order.items().map((item) => item.id)).toEqual(["item-1"]);
+    expect(order.paymentBlocker()).toBeNull();
+  });
+
+  it("renumbers the items left and names the product in the timeline line", () => {
+    const order = completeOrder();
+    order.addBlankItem("item-2");
+    order.addBlankItem("item-3");
+
+    expect(order.removeItem("item-1").event.summary).toBe("Item 1 removed (Beige linen dress)");
+    expect(order.items().map((item) => [item.id, item.position])).toEqual([
+      ["item-2", 0],
+      ["item-3", 1],
+    ]);
+  });
+
+  it("keeps the last item, refuses unknown items, and locks once payment is requested", () => {
+    const order = completeOrder();
+    expect(() => order.removeItem("item-1")).toThrow(LastItem);
+    expect(() => order.removeItem("nope")).toThrow(UnknownDetail);
+
+    const awaiting = awaitingPaymentOrder();
+    expect(() => awaiting.removeItem("item-1")).toThrow(OrderLocked);
   });
 });
 

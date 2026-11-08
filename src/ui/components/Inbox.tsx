@@ -16,7 +16,8 @@ export function Inbox({ onOpen }: { onOpen: (conversationId: string) => void }) 
       {error && <p className="bg-missing-row px-4 py-2 text-[13px] text-missing-fg">{error}</p>}
       {data && rows.length === 0 && (
         <p className="px-6 py-16 text-center text-muted">
-          No messages yet. Type as the customer on the left.
+          No messages yet. Type as the customer <span className="hidden lg:inline">on the left.</span>
+          <span className="lg:hidden">on the Customer phone.</span>
         </p>
       )}
       <ul>

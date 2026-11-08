@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { SHOP_NAME } from "@/domain/types";
+import { errorText, postJson } from "../api";
 import { CustomerChat } from "./CustomerChat";
 import { PhoneFrame } from "./PhoneFrame";
 import { SellerApp } from "./SellerApp";
@@ -20,6 +21,8 @@ export function DemoPage({ initialConversationId }: { initialConversationId: str
         Type an order as the customer, then run the shop{" "}
         <span className="hidden lg:inline">on the right.</span>
         <span className="lg:hidden">from the Seller phone.</span>
+        {" · "}
+        <ResetDemoLink />
       </p>
       <PhoneSwitch side={side} onChange={setSide} />
       <div className="flex w-full justify-center gap-12">
@@ -30,8 +33,37 @@ export function DemoPage({ initialConversationId }: { initialConversationId: str
           <SellerApp />
         </PhoneSlot>
       </div>
-      <p className="text-center text-[13px] text-muted">Payments use PayPal&apos;s sandbox. No real money.</p>
+      <div className="max-w-[560px] space-y-1 text-center text-[13px] text-muted">
+        <p>Payments use PayPal&apos;s sandbox. No real money.</p>
+        <p>To pay, log in as the sandbox buyer from the testing notes and pay with the saved card.</p>
+      </div>
     </main>
+  );
+}
+
+/** Clears every chat and order and starts again at #1001, after a confirm. */
+function ResetDemoLink() {
+  const [busy, setBusy] = useState(false);
+  const reset = async () => {
+    if (!window.confirm("Clear all chats and orders and start again at #1001?")) return;
+    setBusy(true);
+    try {
+      await postJson("/api/demo/reset", {});
+      window.location.reload();
+    } catch (error) {
+      setBusy(false);
+      window.alert(errorText(error));
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={() => void reset()}
+      disabled={busy}
+      className="text-muted underline hover:text-ink"
+    >
+      {busy ? "Resetting…" : "Reset demo"}
+    </button>
   );
 }
 

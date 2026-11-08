@@ -14,21 +14,25 @@ import { ProposalCard } from "./ProposalCard";
 interface Props {
   conversationId: string;
   onBack: () => void;
+  /** Show the order card straight away (opened from the Orders tab). */
+  openCard?: boolean;
+  /** Where the back button goes: "Inbox" or "Orders". */
+  backLabel?: string;
 }
 
 /** One customer's chat, as the seller sees it: the order bar, the messages, the order card and the reply box. */
-export function ConversationView({ conversationId, onBack }: Props) {
+export function ConversationView({ conversationId, onBack, openCard = false, backLabel = "Inbox" }: Props) {
   const { data, error, refresh } = usePolling<SellerConversationView>(`/api/conversations/${conversationId}`);
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-b border-line bg-card px-2 py-2">
         <button type="button" onClick={onBack} className="rounded-full px-2 py-1 text-[14px] hover:bg-page">
-          ‹ Inbox
+          ‹ {backLabel}
         </button>
         <p className="truncate font-semibold">{data?.customerName ?? ""}</p>
       </div>
       {data ? (
-        <ConversationBody data={data} error={error} refresh={refresh} />
+        <ConversationBody data={data} error={error} refresh={refresh} openCard={openCard} />
       ) : (
         <p className="m-auto px-6 text-center text-muted">{error ?? "Loading…"}</p>
       )}
@@ -40,6 +44,7 @@ interface BodyProps {
   data: SellerConversationView;
   error: string | null;
   refresh: () => void;
+  openCard?: boolean;
 }
 
 /** Sends the reply (or the draft), then reloads so a refused stale draft is replaced at once. */
@@ -53,8 +58,8 @@ function sender(conversationId: string, refresh: () => void) {
   };
 }
 
-function ConversationBody({ data, error, refresh }: BodyProps) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+function ConversationBody({ data, error, refresh, openCard = false }: BodyProps) {
+  const [sheetOpen, setSheetOpen] = useState(openCard);
   const started = () => {
     refresh();
     setSheetOpen(true);

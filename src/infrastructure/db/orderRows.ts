@@ -14,6 +14,7 @@ export interface OrderRow {
   frozen_total_cents: number | null;
   pay_token: string | null;
   amount_mismatch: number;
+  created_at: string;
 }
 
 export interface ItemRow {

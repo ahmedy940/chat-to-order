@@ -8,7 +8,7 @@ import { GetPayPage } from "@/application/queries/GetPayPage";
 import { ReceiveCustomerMessage } from "@/application/ReceiveCustomerMessage";
 import { RequestPayment } from "@/application/RequestPayment";
 import { SendReply } from "@/application/SendReply";
-import { AddItem, SettleDetail } from "@/application/SettleDetail";
+import { AddItem, RemoveItem, SettleDetail } from "@/application/SettleDetail";
 import { StartOrder } from "@/application/StartOrder";
 import {
   FixedClock,
@@ -64,6 +64,7 @@ export function appWorld() {
     askCustomer: new AskCustomer(a),
     startOrder: new StartOrder(a),
     addItem: new AddItem(a),
+    removeItem: new RemoveItem(a),
     settle: new SettleDetail(a),
     requestPayment,
     preparePayPal: new PreparePayPalOrder(a),

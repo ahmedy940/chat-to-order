@@ -2,16 +2,20 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { CancelOrder } from "@/application/CancelOrder";
 import { GetCustomerConversation } from "@/application/queries/GetConversation";
+import { ListOrders } from "@/application/queries/ListOrders";
 import { ReceiveCustomerMessage } from "@/application/ReceiveCustomerMessage";
 import { RequestPayment } from "@/application/RequestPayment";
+import { ResetDemo } from "@/application/ResetDemo";
 import { SendReply } from "@/application/SendReply";
 import { SettleDetail } from "@/application/SettleDetail";
 import { StartOrder } from "@/application/StartOrder";
 import { ItemField, OrderField, OrderStatus } from "@/domain/types";
 import { DemoChannel } from "@/infrastructure/channels/DemoChannel";
-import { openDatabase, resetDatabase, type Db } from "@/infrastructure/db/database";
+import { openDatabase, type Db } from "@/infrastructure/db/database";
 import { SqliteConversationRepository } from "@/infrastructure/db/SqliteConversationRepository";
+import { SqliteDemoStore } from "@/infrastructure/db/SqliteDemoStore";
 import { SqliteDraftRepository } from "@/infrastructure/db/SqliteDraftRepository";
 import { SqliteMessageRepository } from "@/infrastructure/db/SqliteMessageRepository";
 import { SqliteOrderEventRepository } from "@/infrastructure/db/SqliteOrderEventRepository";
@@ -55,16 +59,15 @@ function wire(db: Db) {
     startOrder: new StartOrder(a),
     settle: new SettleDetail(a),
     requestPayment: new RequestPayment(a),
+    cancel: new CancelOrder(a),
+    listOrders: new ListOrders(a),
+    resetDemo: new ResetDemo({ store: new SqliteDemoStore(db) }),
   };
 }
 
 /** A customer, and a $128 order filled in by hand: 2 × $60 linen dress (M) + $8 delivery. */
-function filledOrder(app: ReturnType<typeof wire>) {
-  const { conversationId } = app.receive.execute({
-    conversationId: null,
-    clientId: "client-0001",
-    text: "hi",
-  });
+function filledOrder(app: ReturnType<typeof wire>, clientId = "client-0001") {
+  const { conversationId } = app.receive.execute({ conversationId: null, clientId, text: "hi" });
   const { orderId } = app.startOrder.execute(conversationId);
   const itemId = app.orders.get(orderId)?.items()[0]?.id ?? "";
   const set = (
@@ -140,13 +143,31 @@ describe("SQLite storage", () => {
     expect(order?.payToken).toBeNull();
   });
 
-  it("reset empties everything and restarts order numbers at 1001", async () => {
-    const db = openDatabase(":memory:");
-    const app = wire(db);
-    filledOrder(app);
-    resetDatabase(db);
+  it("lists every order newest first, with its customer, items, total, status and date", async () => {
+    const app = wire(openDatabase(":memory:"));
+    const first = filledOrder(app);
+    await app.requestPayment.execute(first.orderId);
+    const second = filledOrder(app, "client-0002");
+    app.cancel.execute(second.orderId);
 
+    const rows = app.listOrders.execute();
+    expect(rows.map((r) => [r.number, r.items, r.total, r.statusLabel, r.payer])).toEqual([
+      [1002, "2 × Beige linen dress (M)", "$128.00", "Cancelled", null],
+      [1001, "2 × Beige linen dress (M)", "$128.00", "Awaiting payment", null],
+    ]);
+    expect(rows[0]?.conversationId).toBe(second.conversationId);
+    expect(rows.every((r) => r.customerName.length > 0 && !Number.isNaN(Date.parse(r.date)))).toBe(true);
+  });
+
+  it("Reset demo empties everything and the next order is #1001 again", async () => {
+    const app = wire(openDatabase(":memory:"));
+    filledOrder(app);
+    filledOrder(app, "client-0002");
+
+    expect(app.resetDemo.execute()).toEqual({ reset: true });
     expect(app.view.latestId()).toBeNull();
-    expect(app.orders.nextNumber()).toBe(1001);
+    expect(app.listOrders.execute()).toEqual([]);
+    const { orderId } = filledOrder(app);
+    expect(app.orders.get(orderId)?.number).toBe(1001);
   });
 });

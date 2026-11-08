@@ -1,4 +1,4 @@
-import type { OrderRepository } from "@/application/ports/OrderRepository";
+import type { ListedOrder, OrderRepository } from "@/application/ports/OrderRepository";
 import { Order } from "@/domain/Order";
 import type { Db } from "./database";
 import {
@@ -50,6 +50,16 @@ export class SqliteOrderRepository implements OrderRepository {
   latestForConversation(conversationId: string): Order | null {
     const sql = "SELECT * FROM orders WHERE conversation_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1";
     return this.load(this.db.prepare<[string], OrderRow>(sql).get(conversationId));
+  }
+
+  listAll(): ListedOrder[] {
+    const rows = this.db
+      .prepare<[], OrderRow>("SELECT * FROM orders ORDER BY created_at DESC, rowid DESC")
+      .all();
+    return rows.flatMap((row) => {
+      const order = this.load(row);
+      return order ? [{ order, createdAt: new Date(row.created_at) }] : [];
+    });
   }
 
   listForConversation(conversationId: string): Order[] {

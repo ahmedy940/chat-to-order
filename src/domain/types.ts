@@ -123,6 +123,7 @@ export const ACTOR_LABELS: Record<Actor, string> = {
 export const EventType = {
   OrderRead: "OrderRead",
   DetailSet: "DetailSet",
+  ItemRemoved: "ItemRemoved",
   QuestionSent: "QuestionSent",
   PaymentRequested: "PaymentRequested",
   PaymentCaptured: "PaymentCaptured",

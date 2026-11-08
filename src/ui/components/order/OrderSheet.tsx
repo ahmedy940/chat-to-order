@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import type { DetailView, ItemView, OrderView } from "@/application/queries/orderViews";
-import { OrderStatus } from "@/domain/types";
-import { patchJson, postJson } from "../../api";
+import { DetailStatus, OrderStatus } from "@/domain/types";
+import { deleteJson, errorText, patchJson, postJson } from "../../api";
 import { useAction } from "../../hooks/useAction";
 import { DetailRow } from "./DetailRow";
 import { OrderActions } from "./OrderActions";
@@ -50,6 +50,7 @@ export function OrderSheet({ order, onClose, onChanged }: Props) {
           editable={order.editable}
           save={save}
           ask={ask}
+          onRemove={order.editable && order.items.length > 1 ? remover(order, item, index, onChanged) : null}
         />
       ))}
       <AddItemButton order={order} onChanged={onChanged} />
@@ -97,13 +98,40 @@ interface ItemProps {
   editable: boolean;
   save: Save;
   ask: Ask;
+  /** Null when the item can't be removed: the order is locked or it's the only item. */
+  onRemove: (() => Promise<void>) | null;
 }
 
-function ItemSection({ item, index, editable, save, ask }: ItemProps) {
+/** Removes an item line. Asks first when the item already has values, so nothing read or typed is lost by a slip. */
+function remover(order: OrderView, item: ItemView, index: number, onChanged: () => void) {
+  const filled = item.details.some(
+    (d) => d.status === DetailStatus.Found || d.status === DetailStatus.SetByYou,
+  );
+  return async () => {
+    if (filled && !window.confirm(`Remove item ${index + 1} from order #${order.number}?`)) return;
+    try {
+      await deleteJson(`/api/orders/${order.id}/items/${item.id}`);
+    } catch (error) {
+      window.alert(errorText(error));
+    }
+    onChanged();
+  };
+}
+
+function ItemSection({ item, index, editable, save, ask, onRemove }: ItemProps) {
   return (
     <section className="border-b border-line">
-      <p className="flex justify-between px-3 pt-2 text-[13px] font-semibold text-muted">
-        <span>Item {index + 1}</span>
+      <p className="flex items-center gap-2 px-3 pt-2 text-[13px] font-semibold text-muted">
+        <span className="flex-1">Item {index + 1}</span>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={() => void onRemove()}
+            className="rounded-full px-2 py-0.5 font-normal underline hover:bg-page hover:text-ink"
+          >
+            Remove
+          </button>
+        )}
         <span>{item.lineTotal}</span>
       </p>
       {item.details.map((detail) => (

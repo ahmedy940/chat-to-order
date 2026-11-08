@@ -8,16 +8,19 @@ import { RefundPayment } from "@/application/RefundPayment";
 import { GetCustomerConversation, GetSellerConversation } from "@/application/queries/GetConversation";
 import { GetInbox } from "@/application/queries/GetInbox";
 import { GetPayPage } from "@/application/queries/GetPayPage";
+import { ListOrders } from "@/application/queries/ListOrders";
 import { ReadOrder } from "@/application/ReadOrder";
 import { ReceiveCustomerMessage } from "@/application/ReceiveCustomerMessage";
 import { RequestPayment } from "@/application/RequestPayment";
+import { ResetDemo } from "@/application/ResetDemo";
 import { SendReply } from "@/application/SendReply";
-import { AddItem, SettleDetail } from "@/application/SettleDetail";
+import { AddItem, RemoveItem, SettleDetail } from "@/application/SettleDetail";
 import { StartOrder } from "@/application/StartOrder";
 import { GeminiAiProvider } from "@/infrastructure/ai/GeminiAiProvider";
 import { DemoChannel } from "@/infrastructure/channels/DemoChannel";
 import { ensureSchema, openDatabase, type Db } from "@/infrastructure/db/database";
 import { SqliteConversationRepository } from "@/infrastructure/db/SqliteConversationRepository";
+import { SqliteDemoStore } from "@/infrastructure/db/SqliteDemoStore";
 import { SqliteDraftRepository } from "@/infrastructure/db/SqliteDraftRepository";
 import { SqliteMessageRepository } from "@/infrastructure/db/SqliteMessageRepository";
 import { SqliteOrderEventRepository } from "@/infrastructure/db/SqliteOrderEventRepository";
@@ -79,6 +82,7 @@ function build(db: Db) {
     askCustomer: new AskCustomer(a),
     startOrder: new StartOrder(a),
     addItem: new AddItem(a),
+    removeItem: new RemoveItem(a),
     settleDetail: new SettleDetail(a),
     requestPayment,
     preparePayPalOrder: new PreparePayPalOrder(a),
@@ -92,6 +96,8 @@ function build(db: Db) {
     getSellerConversation: new GetSellerConversation(a),
     getCustomerConversation: new GetCustomerConversation(a),
     getPayPage: new GetPayPage(a),
+    listOrders: new ListOrders(a),
+    resetDemo: new ResetDemo({ store: new SqliteDemoStore(db) }),
   };
 }
 

@@ -2,10 +2,10 @@ import { InvalidTransition, OrderLocked, OrderNotPayable, RefundNotAllowed, Unkn
 import { Money } from "./Money";
 import { OrderDetail } from "./OrderDetail";
 import { balanceCents, newEvent, type NewOrderEvent } from "./OrderEvent";
-import { OrderItem } from "./OrderItem";
+import { OrderItem, withoutItem } from "./OrderItem";
 import type { OrderReading, OrderSnapshot } from "./OrderSnapshot";
 import { Payment, captureMismatch, isClearing, type CaptureResult, type RefundResult } from "./Payment";
-import { Actor, EventType, OrderField, OrderStatus, type DetailRef } from "./types";
+import { Actor, EventType, ItemField, OrderField, OrderStatus, type DetailRef } from "./types";
 
 export type { OrderReading, OrderSnapshot } from "./OrderSnapshot";
 
@@ -140,6 +140,16 @@ export class Order {
     const item = OrderItem.blank(itemId, this.state.items.length);
     this.state.items.push(item);
     return item;
+  }
+
+  /** The seller removes an item line, for example one added by mistake. The last item can't go. */
+  removeItem(itemId: string): { event: NewOrderEvent; removed: OrderItem } {
+    this.assertEditable();
+    const { items, removed, index } = withoutItem(this.state.items, itemId);
+    this.state.items = items;
+    const product = removed.detail(ItemField.Product)?.value;
+    const summary = `Item ${index + 1} removed${product ? ` (${product})` : ""}`;
+    return { event: newEvent(EventType.ItemRemoved, Actor.Seller, summary), removed };
   }
 
   /** Merges what the AI read, item by item. Seller-set values are never overwritten. */

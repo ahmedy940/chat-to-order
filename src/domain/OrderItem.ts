@@ -1,3 +1,4 @@
+import { LastItem, UnknownDetail } from "./errors";
 import { Money } from "./Money";
 import { OrderDetail, type DetailReading, type DetailSnapshot } from "./OrderDetail";
 import { ITEM_FIELD_ORDER, ItemField, REQUIRED_ITEM_FIELDS } from "./types";
@@ -27,6 +28,16 @@ export class OrderItem {
   static restore(snapshot: ItemSnapshot): OrderItem {
     const details = new Map(snapshot.details.map((d) => [d.field as ItemField, OrderDetail.restore(d)]));
     return new OrderItem(snapshot.id, snapshot.position, details);
+  }
+
+  /** The same item at a new place in the list (after another item is removed). */
+  movedTo(position: number): OrderItem {
+    return new OrderItem(this.id, position, this.details);
+  }
+
+  /** True when the customer has been offered options for one of this item's details. */
+  awaitsCustomer(): boolean {
+    return this.allDetails().some((detail) => detail.offeredOptions.length > 0);
   }
 
   detail(field: ItemField): OrderDetail | undefined {
@@ -97,4 +108,14 @@ export class OrderItem {
     this.details.set(field, created);
     return created;
   }
+}
+
+/** The order's items without one, renumbered from 0. The last item can't be removed. */
+export function withoutItem(items: readonly OrderItem[], itemId: string) {
+  const index = items.findIndex((item) => item.id === itemId);
+  const removed = items[index];
+  if (!removed) throw new UnknownDetail();
+  if (items.length === 1) throw new LastItem();
+  const rest = items.filter((item) => item !== removed).map((item, at) => item.movedTo(at));
+  return { items: rest, removed, index };
 }

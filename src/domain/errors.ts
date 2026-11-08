@@ -31,6 +31,12 @@ export class OrderLocked extends DomainError {
   }
 }
 
+export class LastItem extends DomainError {
+  constructor() {
+    super("LAST_ITEM", "An order needs at least one item. Cancel the order instead.");
+  }
+}
+
 export class InvalidDetailValue extends DomainError {
   constructor(label: string) {
     super("INVALID_DETAIL_VALUE", `That doesn't look like a valid ${label.toLowerCase()}.`);
