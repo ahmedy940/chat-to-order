@@ -30,9 +30,13 @@ import { SqliteUnitOfWork } from "@/infrastructure/db/SqliteUnitOfWork";
 import { PAYPAL_SANDBOX_URL, PayPalRestGateway } from "@/infrastructure/payments/PayPalRestGateway";
 import { RandomIds, RandomTokens, SystemClock } from "@/infrastructure/system";
 
-/** Where the app runs, for pay links: http://localhost:3000 locally, the Render URL when hosted. */
+/**
+ * Where the app runs, for pay links: APP_BASE_URL if set, else the address Render gives every web service
+ * (RENDER_EXTERNAL_URL), else http://localhost:3000.
+ */
 function appBaseUrl(): string {
-  return (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+  const base = process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000";
+  return base.replace(/\/+$/, "");
 }
 
 /** The real adapters. Secrets come from the environment and are never sent to the browser. */

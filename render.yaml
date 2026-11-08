@@ -1,0 +1,23 @@
+# Render Blueprint: one free web service. No secrets here: the four keys below are typed into
+# Render's dashboard when the Blueprint is created ("sync: false" makes Render ask for them).
+services:
+  - type: web
+    name: chat-to-order
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      # The same value as PAYPAL_CLIENT_ID (public by design). Needed at build time for the pay page.
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
