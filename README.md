@@ -12,7 +12,7 @@ Nothing is sent and no money moves without the seller's tap. The agent only prop
 
 ## Try it
 
-**Hosted demo:** _link added after deploy_
+**Hosted demo:** https://chat-to-order.onrender.com
 
 - On a laptop, the page shows two phones: the **Customer** on the left and the **Seller** on the right. On a phone, a switch flips between them.
 - To pay, log in on PayPal's page as the **sandbox buyer** from the Devpost testing instructions and pay with the saved **card**. A sandbox bank payment stays "pending".

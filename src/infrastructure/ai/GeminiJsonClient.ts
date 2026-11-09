@@ -7,7 +7,8 @@ export const DEFAULT_INTENT_MODEL = "gemini-3.5-flash-lite";
 
 export { ThinkingLevel };
 
-const TIMEOUT_MS = 30_000;
+/** Gemini's free tier is sometimes slow (12–49 s seen on 9 Nov), so wait a full minute before giving up. */
+const TIMEOUT_MS = 60_000;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const TIMEOUT_ERRORS = ["AbortError", "TimeoutError"];
 
